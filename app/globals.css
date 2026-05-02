@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Warm background scale */
+  --color-background: #FFFBF5;
+  --color-surface: #FFF8EE;
+  --color-surface-raised: #FFFFFF;
+
+  /* Warm foreground */
+  --color-foreground: #2C1A0E;
+  --color-foreground-muted: #7C6A5A;
+  --color-foreground-subtle: #B5A090;
+
+  /* Border */
+  --color-border: #EAD9C8;
+  --color-border-strong: #D4BBA8;
+
+  /* Brand — warm amber */
+  --color-brand: #D4722A;
+  --color-brand-light: #F5A05A;
+  --color-brand-subtle: #FDF0E5;
+
+  /* Runway status colors */
+  --color-status-green: #3D9A6B;
+  --color-status-green-bg: #EAF7F0;
+  --color-status-yellow: #C49A0A;
+  --color-status-yellow-bg: #FEF9E7;
+  --color-status-orange: #C75C1A;
+  --color-status-orange-bg: #FEF0E5;
+  --color-status-red: #B83232;
+  --color-status-red-bg: #FDEBEB;
+
+  /* Chart palette — 8 warm, distinct tones */
+  --color-chart-1: #D4722A;
+  --color-chart-2: #E8A55A;
+  --color-chart-3: #3D9A6B;
+  --color-chart-4: #C49A0A;
+  --color-chart-5: #7C6A5A;
+  --color-chart-6: #B83232;
+  --color-chart-7: #5A8A9A;
+  --color-chart-8: #A0728A;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
