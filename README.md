@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tally — Personal Finance Tracker
 
-## Getting Started
+A warm, focused expense tracker that helps you understand not just where your money goes, but how long your money lasts.
 
-First, run the development server:
+**Currently in active development.**
+
+---
+
+## What it does
+
+- **Runway tracker** — See how many months you can sustain your current spending rate before running out of money. Color-coded: green (6+ months), yellow (3–6), orange (1–3), red (under 1 month).
+- **Spending breakdown** — Pie charts by category (food, rent, transport) and by merchant (Starbucks, Amazon, etc.)
+- **Smart budget limit** — Enter your savings balance and monthly salary. Tally calculates a realistic monthly budget for you.
+- **Daily / weekly / monthly summaries** — Know exactly what you've spent at any timeframe.
+- **Manual expense entry** — Quick form: amount, category, merchant, date. Done in seconds.
+- **Custom categories** — Comes with sensible presets. Add your own anytime.
+- **Private by design** — Sign in with Google. Your data is locked to your account via Supabase Row Level Security. The code is open source; your numbers are not.
+
+---
+
+## Tech stack
+
+| Layer | Tool |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Styling | Tailwind CSS v4 |
+| Charts | Recharts |
+| Auth + Database | Supabase (Google OAuth + PostgreSQL) |
+| Language | TypeScript |
+
+---
+
+## Running it locally
+
+### 1. Clone the repo
+
+```bash
+git clone https://github.com/YOUR_USERNAME/tally.git
+cd tally
+npm install
+```
+
+### 2. Set up Supabase
+
+1. Create a free project at [supabase.com](https://supabase.com)
+2. Go to **Authentication → Providers** and enable Google
+3. Follow the [Google OAuth setup guide](https://supabase.com/docs/guides/auth/social-login/auth-google) to get your Client ID and Secret
+4. Run the database migrations (SQL files in `/supabase/migrations/`) in the Supabase SQL editor
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your values from the Supabase dashboard:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+app/
+  (auth)/login/        # Login page
+  (dashboard)/
+    dashboard/         # Main dashboard with charts + runway
+    transactions/      # Transaction history
+    settings/          # Profile, salary, savings
+components/
+  ui/                  # Reusable UI components
+  charts/              # Pie chart components
+  forms/               # Expense entry forms
+lib/supabase/          # Supabase client + server helpers
+types/                 # TypeScript interfaces
+supabase/migrations/   # Database schema (run these first)
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [x] Project setup + warm design system
+- [ ] Google auth + Supabase integration
+- [ ] Onboarding (savings + salary entry)
+- [ ] Add expense form
+- [ ] Runway indicator
+- [ ] Dashboard + spending summaries
+- [ ] Pie charts (category + merchant)
+- [ ] Custom categories
+- [ ] Polish + mobile responsiveness
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built by [Issac Ip](https://github.com/issac-ip)
