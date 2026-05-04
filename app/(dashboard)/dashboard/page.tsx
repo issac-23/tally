@@ -13,6 +13,18 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
+  // Defensive: if the profile row is missing or onboarding isn't done,
+  // bounce them to /onboarding before showing anything else.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("onboarded")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.onboarded) {
+    redirect("/onboarding");
+  }
+
   const displayName =
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
