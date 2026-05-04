@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SignInButton } from "@/components/ui/sign-in-button";
+import { Logo } from "@/components/ui/logo";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -18,9 +19,7 @@ export default async function Home() {
 
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="w-14 h-14 rounded-2xl bg-[var(--color-brand)] flex items-center justify-center shadow-md">
-            <span className="text-white text-2xl font-bold">T</span>
-          </div>
+          <Logo size="lg" />
           <h1 className="text-3xl font-bold tracking-tight text-[var(--color-foreground)]">
             Tally
           </h1>

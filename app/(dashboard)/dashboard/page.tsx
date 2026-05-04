@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/ui/sign-out-button";
+import { Logo } from "@/components/ui/logo";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -24,14 +25,7 @@ export default async function DashboardPage() {
 
         {/* Header */}
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[var(--color-brand)] flex items-center justify-center shadow-sm">
-              <span className="text-white text-base font-bold">T</span>
-            </div>
-            <span className="font-bold text-lg text-[var(--color-foreground)]">
-              Tally
-            </span>
-          </div>
+          <Logo size="md" withWordmark />
           <SignOutButton />
         </header>
 
