@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { completeOnboarding } from "./actions";
 
 interface OnboardingFormProps {
   initialSavings?: number;
@@ -11,19 +12,30 @@ export function OnboardingForm({
   initialSavings = 0,
   initialSalary = 0,
 }: OnboardingFormProps) {
-  const [savings, setSavings] = useState(initialSavings || "");
-  const [salary, setSalary] = useState(initialSalary || "");
+  const [savings, setSavings] = useState<number | string>(initialSavings || "");
+  const [salary, setSalary] = useState<number | string>(initialSalary || "");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    const result = await completeOnboarding(
+      Number(savings),
+      Number(salary)
+    );
+
+    if (result?.error) {
+      setError(result.error);
+      setSubmitting(false);
+    }
+    // On success, the action redirects to /dashboard.
+  }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        // Server action wired up in commit 2
-        setSubmitting(true);
-      }}
-      className="space-y-6"
-    >
+    <form onSubmit={handleSubmit} className="space-y-6">
       <Field
         label="Current savings balance"
         hint="Cash you have right now — checking, savings, however you think of it."
@@ -40,11 +52,17 @@ export function OnboardingForm({
 
       <button
         type="submit"
-        disabled={submitting || !savings || !salary}
+        disabled={submitting || savings === "" || salary === ""}
         className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Setting things up..." : "Continue to dashboard"}
       </button>
+
+      {error && (
+        <p className="text-xs text-[var(--color-status-red)] text-center">
+          {error}
+        </p>
+      )}
 
       <p className="text-xs text-[var(--color-foreground-subtle)] text-center">
         You can change these anytime in Settings.
