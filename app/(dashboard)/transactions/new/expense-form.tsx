@@ -1,0 +1,148 @@
+"use client";
+
+import { useState } from "react";
+import { createTransaction } from "./actions";
+import type { Category } from "@/types";
+
+interface ExpenseFormProps {
+  categories: Pick<Category, "id" | "name" | "icon" | "color">[];
+}
+
+export function ExpenseForm({ categories }: ExpenseFormProps) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [amount, setAmount] = useState<number | string>("");
+  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  const [description, setDescription] = useState("");
+  const [merchant, setMerchant] = useState("");
+  const [date, setDate] = useState(today);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    const result = await createTransaction({
+      amount: Number(amount),
+      category_id: categoryId,
+      description: description.trim(),
+      merchant: merchant.trim(),
+      date,
+    });
+
+    if (result?.error) {
+      setError(result.error);
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Amount + Date row */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-[var(--color-foreground)]">
+            Amount
+          </label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-foreground-muted)] text-sm">
+              $
+            </span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min="0.01"
+              value={amount}
+              onChange={(e) => {
+                const v = e.target.value;
+                setAmount(v === "" ? "" : Number(v));
+              }}
+              placeholder="0.00"
+              required
+              autoFocus
+              className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl pl-7 pr-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-[var(--color-foreground)]">
+            Date
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            max={today}
+            required
+            className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Category */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[var(--color-foreground)]">
+          Category
+        </label>
+        <select
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          required
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+        >
+          {categories.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.icon}  {cat.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Merchant */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[var(--color-foreground)]">
+          Merchant <span className="text-[var(--color-foreground-subtle)] font-normal">(optional)</span>
+        </label>
+        <input
+          type="text"
+          value={merchant}
+          onChange={(e) => setMerchant(e.target.value)}
+          placeholder="Starbucks, Amazon, Target..."
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+        />
+      </div>
+
+      {/* Description */}
+      <div className="space-y-1.5">
+        <label className="block text-sm font-medium text-[var(--color-foreground)]">
+          Note <span className="text-[var(--color-foreground-subtle)] font-normal">(optional)</span>
+        </label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Lunch with Sam"
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+        />
+      </div>
+
+      <button
+        type="submit"
+        disabled={submitting || !amount || !categoryId}
+        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {submitting ? "Saving..." : "Add expense"}
+      </button>
+
+      {error && (
+        <p className="text-xs text-[var(--color-status-red)] text-center">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
