@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/ui/sign-out-button";
 import { Logo } from "@/components/ui/logo";
+import { RunwayCard } from "@/components/dashboard/runway-card";
 import { formatCurrency } from "@/lib/utils/format";
-import { monthlyBudgetLimit } from "@/lib/utils/runway";
+import { calculateRunway } from "@/lib/utils/runway";
+import { monthlyAverageSpend } from "@/lib/utils/spending";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -34,7 +36,21 @@ export default async function DashboardPage() {
 
   const savings = Number(profile.savings_balance);
   const salary = Number(profile.monthly_salary);
-  const budget = monthlyBudgetLimit(savings, salary);
+
+  // Pull last 30 days of transactions to compute the runway baseline.
+  const { data: recentTransactions } = await supabase
+    .from("transactions")
+    .select("amount, date")
+    .gte(
+      "date",
+      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10)
+    );
+
+  const avgSpend = monthlyAverageSpend(recentTransactions ?? []);
+  const runway = calculateRunway(savings, salary, avgSpend);
+  const budget = runway.monthly_budget_limit;
 
   return (
     <main className="min-h-screen px-6 py-10">
@@ -64,6 +80,9 @@ export default async function DashboardPage() {
             New expense
           </Link>
         </section>
+
+        {/* Runway */}
+        <RunwayCard runway={runway} />
 
         {/* Numbers */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
