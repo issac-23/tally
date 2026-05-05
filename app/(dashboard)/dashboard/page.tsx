@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/ui/sign-out-button";
@@ -45,14 +46,23 @@ export default async function DashboardPage() {
           <SignOutButton />
         </header>
 
-        {/* Welcome */}
-        <section className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--color-foreground)]">
-            Welcome, {displayName}.
-          </h1>
-          <p className="text-[var(--color-foreground-muted)]">
-            Here's the lay of the land.
-          </p>
+        {/* Welcome + primary action */}
+        <section className="flex items-end justify-between gap-4 flex-wrap">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-foreground)]">
+              Welcome, {displayName}.
+            </h1>
+            <p className="text-[var(--color-foreground-muted)]">
+              Here's the lay of the land.
+            </p>
+          </div>
+          <Link
+            href="/transactions/new"
+            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2.5 transition-colors text-sm shadow-sm"
+          >
+            <PlusIcon />
+            New expense
+          </Link>
         </section>
 
         {/* Numbers */}
@@ -123,5 +133,13 @@ function StatCard({ label, value, hint, accent }: StatCardProps) {
         {hint}
       </p>
     </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }
