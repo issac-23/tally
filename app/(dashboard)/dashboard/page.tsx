@@ -6,7 +6,7 @@ import { Logo } from "@/components/ui/logo";
 import { RunwayCard } from "@/components/dashboard/runway-card";
 import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
-import { monthlyAverageSpend } from "@/lib/utils/spending";
+import { monthlyAverageSpend, spendingSummary } from "@/lib/utils/spending";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -48,9 +48,11 @@ export default async function DashboardPage() {
         .slice(0, 10)
     );
 
-  const avgSpend = monthlyAverageSpend(recentTransactions ?? []);
+  const txs = recentTransactions ?? [];
+  const avgSpend = monthlyAverageSpend(txs);
   const runway = calculateRunway(savings, salary, avgSpend);
   const budget = runway.monthly_budget_limit;
+  const summary = spendingSummary(txs);
 
   return (
     <main className="min-h-screen px-6 py-10">
@@ -84,7 +86,14 @@ export default async function DashboardPage() {
         {/* Runway */}
         <RunwayCard runway={runway} />
 
-        {/* Numbers */}
+        {/* Spending summary */}
+        <section className="grid grid-cols-3 gap-4">
+          <SummaryCard label="Today" amount={summary.today} />
+          <SummaryCard label="This week" amount={summary.this_week} />
+          <SummaryCard label="This month" amount={summary.this_month} />
+        </section>
+
+        {/* Financial state */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <StatCard
             label="Savings balance"
@@ -150,6 +159,24 @@ function StatCard({ label, value, hint, accent }: StatCardProps) {
       </p>
       <p className="text-xs text-[var(--color-foreground-subtle)] mt-1">
         {hint}
+      </p>
+    </div>
+  );
+}
+
+interface SummaryCardProps {
+  label: string;
+  amount: number;
+}
+
+function SummaryCard({ label, amount }: SummaryCardProps) {
+  return (
+    <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm">
+      <p className="text-xs uppercase tracking-wide text-[var(--color-foreground-muted)] font-medium">
+        {label}
+      </p>
+      <p className="text-xl sm:text-2xl font-bold mt-1 text-[var(--color-foreground)]">
+        {formatCurrency(amount)}
       </p>
     </div>
   );
