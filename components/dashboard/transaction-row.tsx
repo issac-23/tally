@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/utils/format";
+import { DeleteTransactionButton } from "./delete-transaction-button";
 
 export interface TransactionRowData {
   id: string;
@@ -58,6 +59,8 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
           {dateLabel}
         </p>
       </div>
+
+      <DeleteTransactionButton id={t.id} />
     </div>
   );
 }
