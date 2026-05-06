@@ -18,7 +18,13 @@ function daysAgo(n: number): Date {
 }
 
 function isOnOrAfter(dateStr: string, threshold: Date): boolean {
-  return new Date(dateStr).getTime() >= threshold.getTime();
+  // YYYY-MM-DD must be parsed as local midnight to match the threshold's
+  // local-time semantics. `new Date("2026-05-15")` treats the string as
+  // UTC midnight, which would silently exclude "today" for any user
+  // in a timezone west of UTC.
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const local = new Date(year, month - 1, day);
+  return local.getTime() >= threshold.getTime();
 }
 
 /**
