@@ -2,6 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/ui/logo";
+import {
+  TransactionRow,
+  type TransactionRowData,
+} from "@/components/dashboard/transaction-row";
 import { formatCurrency } from "@/lib/utils/format";
 
 export default async function TransactionsPage() {
@@ -14,7 +18,7 @@ export default async function TransactionsPage() {
     redirect("/");
   }
 
-  const { data: transactions } = await supabase
+  const { data: transactionsData } = await supabase
     .from("transactions")
     .select(
       "id, amount, description, merchant, date, category:categories(id, name, icon, color)"
@@ -22,10 +26,9 @@ export default async function TransactionsPage() {
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
 
-  const total = (transactions ?? []).reduce(
-    (sum, t) => sum + Number(t.amount),
-    0
-  );
+  const transactions = (transactionsData ?? []) as unknown as TransactionRowData[];
+
+  const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
     <main className="min-h-screen px-6 py-10">
@@ -51,7 +54,7 @@ export default async function TransactionsPage() {
               Transactions
             </h1>
             <p className="text-sm text-[var(--color-foreground-muted)]">
-              {transactions?.length ?? 0} total · {formatCurrency(total)} spent
+              {transactions.length} total · {formatCurrency(total)} spent
             </p>
           </div>
           <Link
@@ -63,7 +66,7 @@ export default async function TransactionsPage() {
         </div>
 
         {/* List */}
-        {transactions && transactions.length > 0 ? (
+        {transactions.length > 0 ? (
           <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl shadow-sm overflow-hidden">
             {transactions.map((t, i) => (
               <li
@@ -81,69 +84,6 @@ export default async function TransactionsPage() {
         )}
       </div>
     </main>
-  );
-}
-
-interface TransactionRowProps {
-  transaction: {
-    id: string;
-    amount: number;
-    description: string | null;
-    merchant: string | null;
-    date: string;
-    category: {
-      id: string;
-      name: string;
-      icon: string;
-      color: string;
-    } | null;
-  };
-}
-
-function TransactionRow({ transaction: t }: TransactionRowProps) {
-  const dateLabel = new Date(t.date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-
-  const primary = t.merchant || t.description || "—";
-  const secondary =
-    t.merchant && t.description ? t.description : t.category?.name ?? "";
-
-  return (
-    <div className="flex items-center gap-4 px-5 py-4">
-      {/* Category icon */}
-      <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base"
-        style={{
-          backgroundColor: t.category?.color
-            ? `${t.category.color}1A` // ~10% opacity hex
-            : "var(--color-surface)",
-        }}
-      >
-        <span>{t.category?.icon ?? "📌"}</span>
-      </div>
-
-      {/* Description */}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-[var(--color-foreground)] truncate">
-          {primary}
-        </p>
-        <p className="text-xs text-[var(--color-foreground-muted)] truncate">
-          {secondary}
-        </p>
-      </div>
-
-      {/* Amount + date */}
-      <div className="text-right shrink-0">
-        <p className="font-semibold text-[var(--color-foreground)]">
-          {formatCurrency(Number(t.amount))}
-        </p>
-        <p className="text-xs text-[var(--color-foreground-muted)]">
-          {dateLabel}
-        </p>
-      </div>
-    </div>
   );
 }
 

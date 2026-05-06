@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/ui/sign-out-button";
 import { Logo } from "@/components/ui/logo";
 import { RunwayCard } from "@/components/dashboard/runway-card";
+import {
+  TransactionRow,
+  type TransactionRowData,
+} from "@/components/dashboard/transaction-row";
 import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
 import { monthlyAverageSpend, spendingSummary } from "@/lib/utils/spending";
@@ -53,6 +57,20 @@ export default async function DashboardPage() {
   const runway = calculateRunway(savings, salary, avgSpend);
   const budget = runway.monthly_budget_limit;
   const summary = spendingSummary(txs);
+
+  // Latest 5 transactions with category info, for the "Recent" section.
+  // Supabase types the joined `category` as an array, but with a single FK it's
+  // always one row, so we narrow it for the row component.
+  const { data: recentData } = await supabase
+    .from("transactions")
+    .select(
+      "id, amount, description, merchant, date, category:categories(id, name, icon, color)"
+    )
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  const recent = (recentData ?? []) as unknown as TransactionRowData[];
 
   return (
     <main className="min-h-screen px-6 py-10">
@@ -113,16 +131,43 @@ export default async function DashboardPage() {
           />
         </section>
 
-        {/* Placeholder for runway + spending — Day 5+ */}
-        <section className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl p-8 shadow-sm">
-          <h2 className="font-semibold text-[var(--color-foreground)] mb-2">
-            Up next
-          </h2>
-          <ul className="text-sm text-[var(--color-foreground-muted)] space-y-1.5">
-            <li>· Add your first expense</li>
-            <li>· Runway indicator with color-coded status</li>
-            <li>· Spending breakdown by category and merchant</li>
-          </ul>
+        {/* Recent transactions */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-[var(--color-foreground)]">
+              Recent transactions
+            </h2>
+            {recent.length > 0 && (
+              <Link
+                href="/transactions"
+                className="text-sm text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)] transition-colors"
+              >
+                See all →
+              </Link>
+            )}
+          </div>
+
+          {recent.length > 0 ? (
+            <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl shadow-sm overflow-hidden">
+              {recent.map((t, i) => (
+                <li
+                  key={t.id}
+                  className={
+                    i > 0 ? "border-t border-[var(--color-border)]" : ""
+                  }
+                >
+                  <TransactionRow transaction={t} />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded-2xl p-8 text-center space-y-2">
+              <p className="text-2xl">📊</p>
+              <p className="text-sm text-[var(--color-foreground-muted)]">
+                No transactions yet. Log your first one to get started.
+              </p>
+            </div>
+          )}
         </section>
       </div>
     </main>
