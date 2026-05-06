@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Logo } from "@/components/ui/logo";
 import {
   TransactionRow,
   type TransactionRowData,
@@ -31,24 +30,11 @@ export default async function TransactionsPage() {
   const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
-    <main className="min-h-screen px-6 py-10">
+    <main className="px-6 py-10">
       <div className="max-w-3xl mx-auto space-y-8">
 
-        {/* Header */}
-        <header className="flex items-center justify-between">
-          <Link href="/dashboard">
-            <Logo size="md" withWordmark />
-          </Link>
-          <Link
-            href="/transactions/new"
-            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2 transition-colors text-sm shadow-sm"
-          >
-            + Add
-          </Link>
-        </header>
-
-        {/* Title */}
-        <div className="flex items-end justify-between flex-wrap gap-2">
+        {/* Title + add */}
+        <div className="flex items-end justify-between flex-wrap gap-3">
           <div className="space-y-1.5">
             <h1 className="text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
               Transactions
@@ -58,10 +44,10 @@ export default async function TransactionsPage() {
             </p>
           </div>
           <Link
-            href="/dashboard"
-            className="text-sm text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)] transition-colors"
+            href="/transactions/new"
+            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2 transition-colors text-sm shadow-sm"
           >
-            ← Back to dashboard
+            + Add expense
           </Link>
         </div>
 

@@ -12,7 +12,7 @@ create table public.transactions (
   created_at  timestamptz not null default now()
 );
 
--- The most common query is "show me my transactions, newest first."
+-- Lookups for a user's transactions, sorted by date and creation time.
 create index transactions_user_date_idx
   on public.transactions (user_id, date desc, created_at desc);
 
@@ -20,7 +20,7 @@ create index transactions_user_date_idx
 create index transactions_category_idx
   on public.transactions (category_id);
 
--- Row Level Security: only your own transactions, period.
+-- Row Level Security: only allow users to see and modify their own transactions.
 alter table public.transactions enable row level security;
 
 create policy "users can read own transactions"

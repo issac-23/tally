@@ -25,7 +25,7 @@ create policy "read presets and own categories"
   on public.categories for select
   using (is_preset = true or auth.uid() = user_id);
 
--- Only insert categories owned by you, never presets.
+-- Only create custom categories for yourself (and never modify presets).
 create policy "users can create their own categories"
   on public.categories for insert
   with check (auth.uid() = user_id and is_preset = false);
