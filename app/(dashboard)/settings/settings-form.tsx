@@ -1,0 +1,108 @@
+"use client";
+
+import { useState } from "react";
+import { updateProfile } from "./actions";
+
+interface SettingsFormProps {
+  initialSavings: number;
+  initialSalary: number;
+}
+
+export function SettingsForm({
+  initialSavings,
+  initialSalary,
+}: SettingsFormProps) {
+  const [savings, setSavings] = useState<number | string>(initialSavings);
+  const [salary, setSalary] = useState<number | string>(initialSalary);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  // Detect dirty state so the Save button feels purposeful.
+  const isDirty =
+    Number(savings) !== initialSavings ||
+    Number(salary) !== initialSalary;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    const result = await updateProfile(Number(savings), Number(salary));
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setSavedAt(Date.now());
+    }
+    setSubmitting(false);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <Field
+        label="Savings balance"
+        value={savings}
+        onChange={setSavings}
+      />
+      <Field
+        label="Monthly salary (after taxes)"
+        value={salary}
+        onChange={setSalary}
+      />
+
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="submit"
+          disabled={submitting || !isDirty || savings === "" || salary === ""}
+          className="bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+        >
+          {submitting ? "Saving..." : "Save changes"}
+        </button>
+
+        {savedAt && !isDirty && !error && (
+          <p className="text-xs text-[var(--color-status-green)]">
+            Saved
+          </p>
+        )}
+      </div>
+
+      {error && (
+        <p className="text-xs text-[var(--color-status-red)]">{error}</p>
+      )}
+    </form>
+  );
+}
+
+interface FieldProps {
+  label: string;
+  value: number | string;
+  onChange: (value: number | string) => void;
+}
+
+function Field({ label, value, onChange }: FieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-medium text-[var(--color-foreground)]">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-foreground-muted)] text-sm">
+          $
+        </span>
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value;
+            onChange(v === "" ? "" : Number(v));
+          }}
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl pl-7 pr-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+        />
+      </div>
+    </div>
+  );
+}
