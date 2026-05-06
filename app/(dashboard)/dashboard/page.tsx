@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/ui/sign-out-button";
-import { Logo } from "@/components/ui/logo";
 import { RunwayCard } from "@/components/dashboard/runway-card";
 import {
   TransactionRow,
@@ -73,14 +71,8 @@ export default async function DashboardPage() {
   const recent = (recentData ?? []) as unknown as TransactionRowData[];
 
   return (
-    <main className="min-h-screen px-6 py-10">
+    <main className="px-6 py-10">
       <div className="max-w-4xl mx-auto space-y-10">
-
-        {/* Header */}
-        <header className="flex items-center justify-between">
-          <Logo size="md" withWordmark />
-          <SignOutButton />
-        </header>
 
         {/* Welcome + primary action */}
         <section className="flex items-end justify-between gap-4 flex-wrap">
