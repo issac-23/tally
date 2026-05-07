@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { validateProfileInput } from "@/lib/utils/profile";
 
 export interface OnboardingResult {
   error?: string;
@@ -12,15 +13,9 @@ export async function completeOnboarding(
   savingsBalance: number,
   monthlySalary: number
 ): Promise<OnboardingResult> {
-  // Basic input validation — the DB has CHECK constraints too,
-  // but a clean error here is friendlier than a Postgres error.
-  if (
-    !Number.isFinite(savingsBalance) ||
-    !Number.isFinite(monthlySalary) ||
-    savingsBalance < 0 ||
-    monthlySalary < 0
-  ) {
-    return { error: "Please enter valid, non-negative amounts." };
+  const validationError = validateProfileInput(savingsBalance, monthlySalary);
+  if (validationError) {
+    return { error: validationError };
   }
 
   const supabase = await createClient();
