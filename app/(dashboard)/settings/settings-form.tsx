@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { updateProfile } from "./actions";
+
+const SAVED_BADGE_TIMEOUT_MS = 2500;
 
 interface SettingsFormProps {
   initialSavings: number;
@@ -22,6 +24,13 @@ export function SettingsForm({
   const isDirty =
     Number(savings) !== initialSavings ||
     Number(salary) !== initialSalary;
+
+  // Auto-clear the "Saved" confirmation so it doesn't linger.
+  useEffect(() => {
+    if (savedAt === null) return;
+    const t = setTimeout(() => setSavedAt(null), SAVED_BADGE_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [savedAt]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -61,7 +70,7 @@ export function SettingsForm({
         </button>
 
         {savedAt && !isDirty && !error && (
-          <p className="text-xs text-[var(--color-status-green)]">
+          <p className="text-xs text-[var(--color-status-green)] transition-opacity">
             Saved
           </p>
         )}
