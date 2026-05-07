@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { SettingsForm } from "./settings-form";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -11,6 +12,15 @@ export default async function SettingsPage() {
     redirect("/");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("savings_balance, monthly_salary")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const savings = Number(profile?.savings_balance ?? 0);
+  const salary = Number(profile?.monthly_salary ?? 0);
+
   return (
     <main className="px-6 py-10">
       <div className="max-w-md mx-auto space-y-6">
@@ -19,16 +29,13 @@ export default async function SettingsPage() {
             Settings
           </h1>
           <p className="text-sm text-[var(--color-foreground-muted)]">
-            Update your savings, salary, and preferences.
+            Update your savings balance and monthly salary. Tally recalculates
+            your runway and budget the moment you save.
           </p>
         </div>
 
-        <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded-2xl p-8 text-center space-y-2">
-          <p className="text-2xl">🛠️</p>
-          <p className="text-sm text-[var(--color-foreground-muted)]">
-            Settings form is coming next. For now, your numbers are locked in
-            from onboarding.
-          </p>
+        <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm">
+          <SettingsForm initialSavings={savings} initialSalary={salary} />
         </div>
       </div>
     </main>

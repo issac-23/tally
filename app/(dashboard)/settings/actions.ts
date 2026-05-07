@@ -1,18 +1,18 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { validateProfileInput } from "@/lib/utils/profile";
 
-export interface OnboardingResult {
+export interface UpdateProfileResult {
   error?: string;
+  success?: boolean;
 }
 
-export async function completeOnboarding(
+export async function updateProfile(
   savingsBalance: number,
   monthlySalary: number
-): Promise<OnboardingResult> {
+): Promise<UpdateProfileResult> {
   const validationError = validateProfileInput(savingsBalance, monthlySalary);
   if (validationError) {
     return { error: validationError };
@@ -27,21 +27,21 @@ export async function completeOnboarding(
     return { error: "You're not signed in." };
   }
 
-  // Upsert: handles both fresh signups (auto-created blank profile)
-  // and any edge case where the row didn't exist yet.
+  // Update only the financial fields. Don't touch `onboarded` since the
+  // user has clearly already gone through onboarding to reach Settings.
   const { error } = await supabase
     .from("profiles")
-    .upsert({
-      id: user.id,
+    .update({
       savings_balance: savingsBalance,
       monthly_salary: monthlySalary,
-      onboarded: true,
-    });
+    })
+    .eq("id", user.id);
 
   if (error) {
     return { error: error.message };
   }
 
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  revalidatePath("/settings");
+  return { success: true };
 }
