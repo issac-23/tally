@@ -53,7 +53,7 @@ export function OnboardingForm({
       <button
         type="submit"
         disabled={submitting || savings === "" || salary === ""}
-        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Setting things up..." : "Continue to dashboard"}
       </button>
@@ -102,7 +102,7 @@ function Field({ label, hint, value, onChange }: FieldProps) {
             onChange(v === "" ? "" : Number(v));
           }}
           placeholder="0.00"
-          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl pl-7 pr-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded pl-7 pr-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
         />
       </div>
     </div>

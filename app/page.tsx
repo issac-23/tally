@@ -30,7 +30,7 @@ export default async function Home() {
         </div>
 
         {/* Sign in card */}
-        <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl p-8 shadow-sm space-y-4">
+        <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-8 space-y-4">
           <p className="text-sm text-[var(--color-foreground-muted)]">
             Sign in to get started — your data stays private to you.
           </p>

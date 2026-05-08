@@ -32,7 +32,7 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
   return (
     <div className="flex items-center gap-4 px-5 py-4">
       <div
-        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-base"
+        className="w-10 h-10 rounded flex items-center justify-center shrink-0 text-base"
         style={{
           backgroundColor: t.category?.color
             ? `${t.category.color}1A`

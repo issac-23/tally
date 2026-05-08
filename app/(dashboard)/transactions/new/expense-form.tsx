@@ -63,7 +63,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
               placeholder="0.00"
               required
               autoFocus
-              className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl pl-7 pr-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+              className="w-full bg-white border border-[var(--color-border-strong)] rounded pl-7 pr-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
             />
           </div>
         </div>
@@ -78,7 +78,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
             onChange={(e) => setDate(e.target.value)}
             max={today}
             required
-            className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+            className="w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
           />
         </div>
       </div>
@@ -92,7 +92,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           required
-          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
         >
           {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
@@ -112,7 +112,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
           value={merchant}
           onChange={(e) => setMerchant(e.target.value)}
           placeholder="Starbucks, Amazon, Target..."
-          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
         />
       </div>
 
@@ -126,14 +126,14 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Lunch with Sam"
-          className="w-full bg-white border border-[var(--color-border-strong)] rounded-xl px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
         />
       </div>
 
       <button
         type="submit"
         disabled={submitting || !amount || !categoryId}
-        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Saving..." : "Add expense"}
       </button>
