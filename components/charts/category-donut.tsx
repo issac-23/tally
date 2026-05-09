@@ -1,7 +1,9 @@
 "use client";
 
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
 import type { CategorySlice } from "@/lib/utils/aggregation";
+
+const CHART_SIZE = 220;
 
 interface CategoryDonutProps {
   slices: CategorySlice[];
@@ -15,25 +17,23 @@ export function CategoryDonut({ slices }: CategoryDonutProps) {
   }));
 
   return (
-    <div className="aspect-square w-full max-w-[220px] mx-auto">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            innerRadius="65%"
-            outerRadius="95%"
-            paddingAngle={1}
-            stroke="none"
-            isAnimationActive={false}
-          >
-            {data.map((entry, index) => (
-              <Cell key={index} fill={entry.color} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="flex justify-center">
+      <PieChart width={CHART_SIZE} height={CHART_SIZE}>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="name"
+          innerRadius={CHART_SIZE * 0.32}
+          outerRadius={CHART_SIZE * 0.48}
+          paddingAngle={1}
+          stroke="none"
+          isAnimationActive={false}
+        >
+          {data.map((entry, index) => (
+            <Cell key={index} fill={entry.color} />
+          ))}
+        </Pie>
+      </PieChart>
     </div>
   );
 }
