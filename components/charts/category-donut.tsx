@@ -15,7 +15,7 @@ export function CategoryDonut({ slices }: CategoryDonutProps) {
   }));
 
   return (
-    <div className="w-full h-48 sm:h-56">
+    <div className="aspect-square w-full max-w-[220px] mx-auto">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
