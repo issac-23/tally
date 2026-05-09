@@ -86,7 +86,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2.5 transition-colors text-sm shadow-sm"
+            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2.5 transition-colors text-sm"
           >
             <PlusIcon />
             New expense
@@ -140,7 +140,7 @@ export default async function DashboardPage() {
           </div>
 
           {recent.length > 0 ? (
-            <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl shadow-sm overflow-hidden">
+            <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded overflow-hidden">
               {recent.map((t, i) => (
                 <li
                   key={t.id}
@@ -153,7 +153,7 @@ export default async function DashboardPage() {
               ))}
             </ul>
           ) : (
-            <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded-2xl p-8 text-center space-y-2">
+            <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded p-8 text-center space-y-2">
               <p className="text-2xl">📊</p>
               <p className="text-sm text-[var(--color-foreground-muted)]">
                 No transactions yet. Log your first one to get started.
@@ -176,7 +176,7 @@ interface StatCardProps {
 function StatCard({ label, value, hint, accent }: StatCardProps) {
   return (
     <div
-      className={`rounded-2xl p-5 shadow-sm border ${
+      className={`rounded p-5 border ${
         accent
           ? "bg-[var(--color-brand-subtle)] border-[var(--color-brand-light)]"
           : "bg-[var(--color-surface-raised)] border-[var(--color-border)]"
@@ -208,7 +208,7 @@ interface SummaryCardProps {
 
 function SummaryCard({ label, amount }: SummaryCardProps) {
   return (
-    <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm">
+    <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-4">
       <p className="text-xs uppercase tracking-wide text-[var(--color-foreground-muted)] font-medium">
         {label}
       </p>

@@ -30,7 +30,7 @@ export function SignInButton() {
       <button
         onClick={handleSignIn}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-3 bg-white border border-[var(--color-border-strong)] rounded-xl px-4 py-3 text-[var(--color-foreground)] font-medium text-sm hover:bg-[var(--color-surface)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-3 bg-white border border-[var(--color-border-strong)] rounded px-4 py-3 text-[var(--color-foreground)] font-medium text-sm hover:bg-[var(--color-surface)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
         <GoogleIcon />
         {loading ? "Redirecting..." : "Continue with Google"}
