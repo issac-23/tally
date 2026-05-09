@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Inbox, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RunwayCard } from "@/components/dashboard/runway-card";
 import {
@@ -88,7 +89,7 @@ export default async function DashboardPage() {
             href="/transactions/new"
             className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2.5 transition-colors text-sm"
           >
-            <PlusIcon />
+            <Plus size={16} />
             New expense
           </Link>
         </section>
@@ -154,7 +155,11 @@ export default async function DashboardPage() {
             </ul>
           ) : (
             <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded p-8 text-center space-y-2">
-              <p className="text-2xl">📊</p>
+              <Inbox
+                size={28}
+                className="mx-auto text-[var(--color-foreground-subtle)]"
+                aria-hidden
+              />
               <p className="text-sm text-[var(--color-foreground-muted)]">
                 No transactions yet. Log your first one to get started.
               </p>
@@ -219,10 +224,3 @@ function SummaryCard({ label, amount }: SummaryCardProps) {
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
