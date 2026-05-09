@@ -40,7 +40,10 @@ export function RunwayCard({ runway }: RunwayCardProps) {
     : 100;
 
   return (
-    <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
+    <section
+      className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6 border-l-[3px]"
+      style={{ borderLeftColor: styles.bar }}
+    >
       <div className="flex items-baseline justify-between mb-3">
         <p className="text-xs uppercase tracking-wider text-[var(--color-foreground-muted)] font-medium">
           Runway
