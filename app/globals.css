@@ -1,52 +1,68 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Warm background scale */
-  --color-background: #F9F6F1;
-  --color-surface: #F3EFE8;
+  /* ---------- Surface (backgrounds) ---------- */
+  --color-background: #FDFCFB;
+  --color-surface: #F5F4F2;
   --color-surface-raised: #FFFFFF;
 
-  /* Warm foreground */
-  --color-foreground: #2C1A0E;
-  --color-foreground-muted: #7C6A5A;
-  --color-foreground-subtle: #B5A090;
+  /* ---------- Content (text) ---------- */
+  --color-foreground: #1A1A1A;
+  --color-foreground-muted: #6B7280;
+  --color-foreground-subtle: #9CA3AF;
 
-  /* Border */
-  --color-border: #EAD9C8;
-  --color-border-strong: #D4BBA8;
+  /* ---------- Borders ---------- */
+  --color-border: #E5E7EB;
+  --color-border-strong: #D1D5DB;
 
-  /* Brand — warm amber */
-  --color-brand: #D4722A;
-  --color-brand-light: #F5A05A;
+  /* ---------- Brand ---------- */
+  --color-brand: #D4762C;
+  --color-brand-light: #E89455;
   --color-brand-subtle: #FDF0E5;
 
-  /* Runway status colors */
-  --color-status-green: #3D9A6B;
-  --color-status-green-bg: #EAF7F0;
+  /* ---------- Status (runway gradient) ---------- */
+  --color-status-green: #059669;
+  --color-status-green-bg: #D1FAE5;
   --color-status-yellow: #C49A0A;
   --color-status-yellow-bg: #FEF9E7;
   --color-status-orange: #C75C1A;
   --color-status-orange-bg: #FEF0E5;
-  --color-status-red: #B83232;
-  --color-status-red-bg: #FDEBEB;
+  --color-status-red: #DC2626;
+  --color-status-red-bg: #FEE2E2;
 
-  /* Chart palette — 8 warm, distinct tones */
-  --color-chart-1: #D4722A;
-  --color-chart-2: #E8A55A;
-  --color-chart-3: #3D9A6B;
+  /* ---------- Chart palette (8 distinct tones) ---------- */
+  --color-chart-1: #D4762C;
+  --color-chart-2: #E89455;
+  --color-chart-3: #059669;
   --color-chart-4: #C49A0A;
-  --color-chart-5: #7C6A5A;
-  --color-chart-6: #B83232;
+  --color-chart-5: #6B7280;
+  --color-chart-6: #DC2626;
   --color-chart-7: #5A8A9A;
   --color-chart-8: #A0728A;
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ---------- Typography scale (1.125 modular ratio) ---------- */
+  --text-display: 22.78px;
+  --text-h1: 20.25px;
+  --text-h2: 18px;
+
+  /* ---------- Font families ---------- */
+  --font-sans: var(--font-work-sans);
+  --font-display: var(--font-playfair);
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Display headings use Playfair via the .font-display class.
+   Tighter line-height since serif display fonts run tall. */
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
 }

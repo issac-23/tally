@@ -77,7 +77,7 @@ export default async function DashboardPage() {
         {/* Welcome + primary action */}
         <section className="flex items-end justify-between gap-4 flex-wrap">
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Welcome, {displayName}.
             </h1>
             <p className="text-[var(--color-foreground-muted)]">
@@ -182,7 +182,7 @@ function StatCard({ label, value, hint, accent }: StatCardProps) {
           : "bg-[var(--color-surface-raised)] border-[var(--color-border)]"
       }`}
     >
-      <p className="text-xs uppercase tracking-wide text-[var(--color-foreground-muted)] font-medium">
+      <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
         {label}
       </p>
       <p
@@ -209,7 +209,7 @@ interface SummaryCardProps {
 function SummaryCard({ label, amount }: SummaryCardProps) {
   return (
     <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-4">
-      <p className="text-xs uppercase tracking-wide text-[var(--color-foreground-muted)] font-medium">
+      <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
         {label}
       </p>
       <p className="text-xl sm:text-2xl font-bold mt-1 text-[var(--color-foreground)]">

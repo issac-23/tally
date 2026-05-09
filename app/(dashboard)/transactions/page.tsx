@@ -36,7 +36,7 @@ export default async function TransactionsPage() {
         {/* Title + add */}
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Transactions
             </h1>
             <p className="text-sm text-[var(--color-foreground-muted)]">
