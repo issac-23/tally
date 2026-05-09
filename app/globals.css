@@ -40,8 +40,10 @@
   --color-chart-7: #5A8A9A;
   --color-chart-8: #A0728A;
 
-  /* ---------- Typography scale (1.125 modular ratio) ---------- */
-  --text-display: 22.78px;
+  /* ---------- Typography scale ---------- */
+  /* Display sits a few steps above the modular scale on purpose so dashboard
+     headings feel like real page anchors. h1 and h2 stay on the 1.125 ratio. */
+  --text-display: 30px;
   --text-h1: 20.25px;
   --text-h2: 18px;
 
