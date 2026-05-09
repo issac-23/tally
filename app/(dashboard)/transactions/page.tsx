@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   TransactionRow,
@@ -76,7 +77,11 @@ export default async function TransactionsPage() {
 function EmptyState() {
   return (
     <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded p-12 text-center space-y-3">
-      <p className="text-3xl">📊</p>
+      <Inbox
+        size={32}
+        className="mx-auto text-[var(--color-foreground-subtle)]"
+        aria-hidden
+      />
       <p className="font-medium text-[var(--color-foreground)]">
         No transactions yet
       </p>

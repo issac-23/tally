@@ -1,4 +1,5 @@
 import { formatCurrency } from "@/lib/utils/format";
+import { CategoryIcon } from "@/components/ui/category-icon";
 import { DeleteTransactionButton } from "./delete-transaction-button";
 
 export interface TransactionRowData {
@@ -32,14 +33,15 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
   return (
     <div className="flex items-center gap-4 px-5 py-4">
       <div
-        className="w-10 h-10 rounded flex items-center justify-center shrink-0 text-base"
+        className="w-10 h-10 rounded flex items-center justify-center shrink-0"
         style={{
           backgroundColor: t.category?.color
             ? `${t.category.color}1A`
             : "var(--color-surface)",
+          color: t.category?.color ?? "var(--color-foreground-muted)",
         }}
       >
-        <span>{t.category?.icon ?? "📌"}</span>
+        <CategoryIcon name={t.category?.icon} size={18} />
       </div>
 
       <div className="flex-1 min-w-0">

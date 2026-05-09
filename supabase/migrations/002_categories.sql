@@ -40,14 +40,15 @@ create policy "users can delete their own categories"
   using (auth.uid() = user_id and is_preset = false);
 
 -- Seed preset categories (visible to everyone).
+-- Icon strings map to Lucide React component names.
 insert into public.categories (user_id, name, color, icon, is_preset) values
-  (null, 'Food',          '#D4722A', '🍔', true),
-  (null, 'Groceries',     '#3D9A6B', '🛒', true),
-  (null, 'Housing',       '#C49A0A', '🏠', true),
-  (null, 'Transport',     '#5A8A9A', '🚗', true),
-  (null, 'Entertainment', '#A0728A', '🎬', true),
-  (null, 'Shopping',      '#E8A55A', '🛍️', true),
-  (null, 'Health',        '#B83232', '💊', true),
-  (null, 'Bills',         '#7C6A5A', '💡', true),
-  (null, 'Subscriptions', '#C75C1A', '📱', true),
-  (null, 'Other',         '#B5A090', '📌', true);
+  (null, 'Food',          '#D4722A', 'utensils',      true),
+  (null, 'Groceries',     '#3D9A6B', 'shopping-cart', true),
+  (null, 'Housing',       '#C49A0A', 'home',          true),
+  (null, 'Transport',     '#5A8A9A', 'car',           true),
+  (null, 'Entertainment', '#A0728A', 'tv',            true),
+  (null, 'Shopping',      '#E8A55A', 'shopping-bag', true),
+  (null, 'Health',        '#B83232', 'heart',         true),
+  (null, 'Bills',         '#7C6A5A', 'zap',           true),
+  (null, 'Subscriptions', '#C75C1A', 'smartphone',    true),
+  (null, 'Other',         '#B5A090', 'tag',           true);
