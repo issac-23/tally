@@ -43,7 +43,7 @@ export function DeleteTransactionButton({ id }: DeleteTransactionButtonProps) {
         onClick={handleClick}
         disabled={isPending}
         aria-label="Confirm delete"
-        className="shrink-0 px-2.5 py-1.5 -mr-2 rounded-lg text-xs font-medium bg-[var(--color-status-red-bg)] text-[var(--color-status-red)] hover:bg-[var(--color-status-red)] hover:text-white transition-colors disabled:opacity-60"
+        className="shrink-0 px-2.5 py-1.5 -mr-2 rounded text-xs font-medium bg-[var(--color-status-red-bg)] text-[var(--color-status-red)] hover:bg-[var(--color-status-red)] hover:text-white transition-colors disabled:opacity-60"
       >
         {isPending ? "Deleting..." : "Tap to confirm"}
       </button>
@@ -55,7 +55,7 @@ export function DeleteTransactionButton({ id }: DeleteTransactionButtonProps) {
       type="button"
       onClick={handleClick}
       aria-label="Delete transaction"
-      className="shrink-0 p-2 -mr-2 rounded-lg text-[var(--color-foreground-subtle)] hover:text-[var(--color-status-red)] hover:bg-[var(--color-status-red-bg)] transition-colors"
+      className="shrink-0 p-2 -mr-2 rounded text-[var(--color-foreground-subtle)] hover:text-[var(--color-status-red)] hover:bg-[var(--color-status-red-bg)] transition-colors"
     >
       <TrashIcon />
     </button>

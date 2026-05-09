@@ -31,7 +31,7 @@ export function runwayStatus(monthsRemaining: number): RunwayStatus {
  * Human-readable label for the runway.
  */
 export function runwayLabel(monthsRemaining: number): string {
-  if (!isFinite(monthsRemaining)) return "Indefinite — you're saving";
+  if (!isFinite(monthsRemaining)) return "Indefinite, you're saving";
   if (monthsRemaining < 1) {
     const days = Math.max(0, Math.round(monthsRemaining * 30));
     return `~${days} day${days === 1 ? "" : "s"} left`;

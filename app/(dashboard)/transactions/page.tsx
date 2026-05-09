@@ -45,7 +45,7 @@ export default async function TransactionsPage() {
           </div>
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2 transition-colors text-sm shadow-sm"
+            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm"
           >
             + Add expense
           </Link>
@@ -53,7 +53,7 @@ export default async function TransactionsPage() {
 
         {/* List */}
         {transactions.length > 0 ? (
-          <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl shadow-sm overflow-hidden">
+          <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded overflow-hidden">
             {transactions.map((t, i) => (
               <li
                 key={t.id}
@@ -75,7 +75,7 @@ export default async function TransactionsPage() {
 
 function EmptyState() {
   return (
-    <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded-2xl p-12 text-center space-y-3">
+    <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded p-12 text-center space-y-3">
       <p className="text-3xl">📊</p>
       <p className="font-medium text-[var(--color-foreground)]">
         No transactions yet
@@ -85,7 +85,7 @@ function EmptyState() {
       </p>
       <Link
         href="/transactions/new"
-        className="inline-block mt-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded-xl px-4 py-2 transition-colors text-sm"
+        className="inline-block mt-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm"
       >
         Add your first expense
       </Link>

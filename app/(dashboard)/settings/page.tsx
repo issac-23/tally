@@ -34,7 +34,7 @@ export default async function SettingsPage() {
           </p>
         </div>
 
-        <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded-2xl p-6 shadow-sm">
+        <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-6">
           <SettingsForm initialSavings={savings} initialSalary={salary} />
         </div>
       </div>

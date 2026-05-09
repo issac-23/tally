@@ -7,28 +7,24 @@ interface RunwayCardProps {
 
 const statusStyles: Record<
   RunwayStatus,
-  { bg: string; bar: string; fg: string; label: string }
+  { bar: string; fg: string; label: string }
 > = {
   green: {
-    bg: "var(--color-status-green-bg)",
     bar: "var(--color-status-green)",
     fg: "var(--color-status-green)",
     label: "Healthy",
   },
   yellow: {
-    bg: "var(--color-status-yellow-bg)",
     bar: "var(--color-status-yellow)",
     fg: "var(--color-status-yellow)",
     label: "Watch closely",
   },
   orange: {
-    bg: "var(--color-status-orange-bg)",
     bar: "var(--color-status-orange)",
     fg: "var(--color-status-orange)",
     label: "Getting tight",
   },
   red: {
-    bg: "var(--color-status-red-bg)",
     bar: "var(--color-status-red)",
     fg: "var(--color-status-red)",
     label: "Critical",
@@ -38,45 +34,36 @@ const statusStyles: Record<
 export function RunwayCard({ runway }: RunwayCardProps) {
   const styles = statusStyles[runway.status];
 
-  // Bar fill: 0 months = 0%, 12+ months = 100%, linear in between.
+  // Bar fill: 0 months -> 0%, 12+ months -> 100%, linear in between.
   const barFillPercent = isFinite(runway.months_remaining)
     ? Math.min(100, Math.max(2, (runway.months_remaining / 12) * 100))
     : 100;
 
   return (
-    <section
-      className="rounded-2xl p-6 shadow-sm border"
-      style={{
-        backgroundColor: styles.bg,
-        borderColor: styles.bar + "40",
-      }}
-    >
-      <div className="flex items-baseline justify-between mb-2">
-        <p className="text-xs uppercase tracking-wide text-[var(--color-foreground-muted)] font-medium">
+    <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
+      <div className="flex items-baseline justify-between mb-3">
+        <p className="text-xs uppercase tracking-wider text-[var(--color-foreground-muted)] font-medium">
           Runway
         </p>
         <span
-          className="text-xs font-medium uppercase tracking-wide"
+          className="text-xs font-medium uppercase tracking-wider"
           style={{ color: styles.fg }}
         >
           {styles.label}
         </span>
       </div>
 
-      <p
-        className="text-3xl font-bold mb-3"
-        style={{ color: styles.fg }}
-      >
+      <p className="text-3xl font-bold mb-4 text-[var(--color-foreground)]">
         {runway.label}
       </p>
 
-      {/* Progress bar */}
+      {/* Flat progress track + fill (no inner radius for the editorial look). */}
       <div
-        className="h-2 rounded-full overflow-hidden bg-white/60 mb-3"
+        className="h-1.5 bg-[var(--color-surface)] mb-3 overflow-hidden"
         aria-hidden
       >
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full transition-all"
           style={{
             width: `${barFillPercent}%`,
             backgroundColor: styles.bar,

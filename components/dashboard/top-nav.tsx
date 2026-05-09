@@ -30,7 +30,7 @@ export function TopNav() {
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                   active
                     ? "bg-[var(--color-brand-subtle)] text-[var(--color-brand)]"
                     : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)]"
