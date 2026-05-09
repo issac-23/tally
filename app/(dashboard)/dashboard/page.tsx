@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Inbox, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RunwayCard } from "@/components/dashboard/runway-card";
+import { SpendingByCategory } from "@/components/dashboard/spending-by-category";
 import {
   TransactionRow,
   type TransactionRowData,
@@ -10,6 +11,7 @@ import {
 import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
 import { monthlyAverageSpend, spendingSummary } from "@/lib/utils/spending";
+import { groupByCategory, comparePeriods } from "@/lib/utils/aggregation";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -71,6 +73,34 @@ export default async function DashboardPage() {
 
   const recent = (recentData ?? []) as unknown as TransactionRowData[];
 
+  // 60-day window with category info, used for the by-category donut + delta.
+  const { data: txByCategoryData } = await supabase
+    .from("transactions")
+    .select(
+      "amount, date, category:categories(id, name, icon, color)"
+    )
+    .gte(
+      "date",
+      new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10)
+    );
+
+  const txByCategory = (txByCategoryData ?? []) as unknown as Array<{
+    amount: number | string;
+    date: string;
+    category: { id: string; name: string; icon: string; color: string } | null;
+  }>;
+  // Donut and breakdown only show the last 30 days of activity.
+  const last30 = txByCategory.filter((t) => {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    return t.date >= cutoff;
+  });
+  const categorySlices = groupByCategory(last30);
+  const periodComparison = comparePeriods(txByCategory);
+
   return (
     <main className="px-6 py-10">
       <div className="max-w-4xl mx-auto space-y-10">
@@ -103,6 +133,12 @@ export default async function DashboardPage() {
           <SummaryCard label="This week" amount={summary.this_week} />
           <SummaryCard label="This month" amount={summary.this_month} />
         </section>
+
+        {/* Spending by category */}
+        <SpendingByCategory
+          slices={categorySlices}
+          comparison={periodComparison}
+        />
 
         {/* Financial state */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
