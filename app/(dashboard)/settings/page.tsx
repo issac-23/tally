@@ -25,7 +25,7 @@ export default async function SettingsPage() {
     <main className="px-6 py-10">
       <div className="max-w-md mx-auto space-y-6">
         <div className="space-y-1.5">
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
+          <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
             Settings
           </h1>
           <p className="text-sm text-[var(--color-foreground-muted)]">

@@ -45,11 +45,11 @@ export function RunwayCard({ runway }: RunwayCardProps) {
       style={{ borderLeftColor: styles.bar }}
     >
       <div className="flex items-baseline justify-between mb-3">
-        <p className="text-xs uppercase tracking-wider text-[var(--color-foreground-muted)] font-medium">
+        <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
           Runway
         </p>
         <span
-          className="text-xs font-medium uppercase tracking-wider"
+          className="text-xs font-medium uppercase tracking-widest"
           style={{ color: styles.fg }}
         >
           {styles.label}

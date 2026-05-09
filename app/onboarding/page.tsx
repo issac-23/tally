@@ -31,7 +31,7 @@ export default async function OnboardingPage() {
         <div className="flex flex-col items-center gap-4 text-center">
           <Logo size="lg" />
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Welcome to Tally.
             </h1>
             <p className="text-sm text-[var(--color-foreground-muted)] leading-relaxed">

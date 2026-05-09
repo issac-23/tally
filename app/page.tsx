@@ -20,7 +20,7 @@ export default async function Home() {
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <Logo size="lg" />
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--color-foreground)]">
+          <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
             Tally
           </h1>
           <p className="text-[var(--color-foreground-muted)] text-base leading-relaxed">

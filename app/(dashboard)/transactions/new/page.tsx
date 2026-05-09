@@ -28,7 +28,7 @@ export default async function NewTransactionPage() {
         {/* Title */}
         <div className="flex items-end justify-between gap-3">
           <div className="space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
+            <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Add an expense
             </h1>
             <p className="text-sm text-[var(--color-foreground-muted)]">
