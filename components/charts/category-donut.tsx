@@ -1,12 +1,12 @@
 "use client";
 
 import { PieChart, Pie, Cell } from "recharts";
-import type { CategorySlice } from "@/lib/utils/aggregation";
+import type { Slice } from "@/lib/utils/aggregation";
 
 const CHART_SIZE = 220;
 
 interface CategoryDonutProps {
-  slices: CategorySlice[];
+  slices: Slice[];
 }
 
 export function CategoryDonut({ slices }: CategoryDonutProps) {

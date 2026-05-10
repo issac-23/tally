@@ -8,6 +8,7 @@ import {
   Heart,
   Zap,
   Smartphone,
+  Store,
   Tag,
   type LucideIcon,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const iconMap: Record<string, LucideIcon> = {
   heart: Heart,
   zap: Zap,
   smartphone: Smartphone,
+  store: Store,
   tag: Tag,
 };
 
