@@ -109,7 +109,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="px-6 py-10">
-      <div className="max-w-4xl mx-auto space-y-10">
+      <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Welcome + primary action */}
         <section className="flex items-end justify-between gap-4 flex-wrap">
@@ -130,15 +130,24 @@ export default async function DashboardPage() {
           </Link>
         </section>
 
-        {/* Runway */}
-        <RunwayCard runway={runway} />
-
-        {/* Savings projection chart */}
-        <SavingsProjectionSection
-          projection={projection}
-          monthlySalary={salary}
-          monthlyAvgSpend={avgSpend}
-        />
+        {/* Runway + today/week/month on the left, projection chart on the right */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-1 space-y-4">
+            <RunwayCard runway={runway} />
+            <div className="grid grid-cols-3 gap-3">
+              <SummaryCard label="Today" amount={summary.today} />
+              <SummaryCard label="This week" amount={summary.this_week} />
+              <SummaryCard label="This month" amount={summary.this_month} />
+            </div>
+          </div>
+          <div className="lg:col-span-2">
+            <SavingsProjectionSection
+              projection={projection}
+              monthlySalary={salary}
+              monthlyAvgSpend={avgSpend}
+            />
+          </div>
+        </section>
 
         {/* Spending breakdowns side by side */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -152,13 +161,6 @@ export default async function DashboardPage() {
             slices={merchantSlices}
             emptyMessage="No merchants tracked yet. Add a merchant when you log an expense to see this break down."
           />
-        </section>
-
-        {/* Spending summary */}
-        <section className="grid grid-cols-3 gap-4">
-          <SummaryCard label="Today" amount={summary.today} />
-          <SummaryCard label="This week" amount={summary.this_week} />
-          <SummaryCard label="This month" amount={summary.this_month} />
         </section>
 
         {/* Recent transactions */}
