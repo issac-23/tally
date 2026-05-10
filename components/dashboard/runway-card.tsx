@@ -62,7 +62,7 @@ export function RunwayCard({ runway }: RunwayCardProps) {
 
       {/* Flat progress track + fill (no inner radius for the editorial look). */}
       <div
-        className="h-1.5 bg-[var(--color-surface)] mb-3 overflow-hidden"
+        className="h-1.5 bg-[var(--color-surface)] mb-5 overflow-hidden"
         aria-hidden
       >
         <div
@@ -74,11 +74,27 @@ export function RunwayCard({ runway }: RunwayCardProps) {
         />
       </div>
 
-      <p className="text-xs text-[var(--color-foreground-muted)]">
-        Spending {formatCurrency(runway.monthly_avg_spend)}/mo
-        {" · "}
-        Sustainable budget {formatCurrency(runway.monthly_budget_limit)}/mo
-      </p>
+      {/* Recommended budget + current spend, two-column footer */}
+      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[var(--color-border)]">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
+            Recommended budget
+          </p>
+          <p className="font-display text-h1 text-[var(--color-foreground)] mt-1">
+            {formatCurrency(runway.monthly_budget_limit)}
+            <span className="text-sm text-[var(--color-foreground-muted)] font-sans ml-1">/mo</span>
+          </p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
+            Currently spending
+          </p>
+          <p className="font-display text-h1 text-[var(--color-foreground)] mt-1">
+            {formatCurrency(runway.monthly_avg_spend)}
+            <span className="text-sm text-[var(--color-foreground-muted)] font-sans ml-1">/mo</span>
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

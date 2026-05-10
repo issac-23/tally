@@ -56,7 +56,6 @@ export default async function DashboardPage() {
   const txs = recentTransactions ?? [];
   const avgSpend = monthlyAverageSpend(txs);
   const runway = calculateRunway(savings, salary, avgSpend);
-  const budget = runway.monthly_budget_limit;
   const summary = spendingSummary(txs);
 
   // Latest 5 transactions with category info, for the "Recent" section.
@@ -140,26 +139,6 @@ export default async function DashboardPage() {
           comparison={periodComparison}
         />
 
-        {/* Financial state */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            label="Savings balance"
-            value={formatCurrency(savings)}
-            hint="What you have on hand"
-          />
-          <StatCard
-            label="Monthly salary"
-            value={formatCurrency(salary)}
-            hint="After-tax take-home"
-          />
-          <StatCard
-            label="Recommended budget"
-            value={formatCurrency(budget)}
-            hint="Sustainable monthly spend"
-            accent
-          />
-        </section>
-
         {/* Recent transactions */}
         <section className="space-y-3">
           <div className="flex items-center justify-between">
@@ -204,41 +183,6 @@ export default async function DashboardPage() {
         </section>
       </div>
     </main>
-  );
-}
-
-interface StatCardProps {
-  label: string;
-  value: string;
-  hint: string;
-  accent?: boolean;
-}
-
-function StatCard({ label, value, hint, accent }: StatCardProps) {
-  return (
-    <div
-      className={`rounded p-5 border ${
-        accent
-          ? "bg-[var(--color-brand-subtle)] border-[var(--color-brand-light)]"
-          : "bg-[var(--color-surface-raised)] border-[var(--color-border)]"
-      }`}
-    >
-      <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
-        {label}
-      </p>
-      <p
-        className={`text-2xl font-bold mt-1.5 ${
-          accent
-            ? "text-[var(--color-brand)]"
-            : "text-[var(--color-foreground)]"
-        }`}
-      >
-        {value}
-      </p>
-      <p className="text-xs text-[var(--color-foreground-subtle)] mt-1">
-        {hint}
-      </p>
-    </div>
   );
 }
 
