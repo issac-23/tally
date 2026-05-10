@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Inbox, Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { RunwayCard } from "@/components/dashboard/runway-card";
+import { SavingsProjectionSection } from "@/components/dashboard/savings-projection";
 import { SpendingBreakdown } from "@/components/dashboard/spending-breakdown";
 import {
   TransactionRow,
@@ -10,6 +11,7 @@ import {
 } from "@/components/dashboard/transaction-row";
 import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
+import { projectSavings } from "@/lib/utils/projection";
 import { monthlyAverageSpend, spendingSummary } from "@/lib/utils/spending";
 import {
   groupByCategory,
@@ -60,6 +62,7 @@ export default async function DashboardPage() {
   const txs = recentTransactions ?? [];
   const avgSpend = monthlyAverageSpend(txs);
   const runway = calculateRunway(savings, salary, avgSpend);
+  const projection = projectSavings(savings, salary, avgSpend);
   const summary = spendingSummary(txs);
 
   // Latest 5 transactions with category info, for the "Recent" section.
@@ -129,6 +132,13 @@ export default async function DashboardPage() {
 
         {/* Runway */}
         <RunwayCard runway={runway} />
+
+        {/* Savings projection chart */}
+        <SavingsProjectionSection
+          projection={projection}
+          monthlySalary={salary}
+          monthlyAvgSpend={avgSpend}
+        />
 
         {/* Spending breakdowns side by side */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
