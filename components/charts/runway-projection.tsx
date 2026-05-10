@@ -15,12 +15,15 @@ const CHART_HEIGHT = 240;
 
 interface RunwayProjectionProps {
   projection: SavingsProjection;
+  /** Pre-computed month labels indexed by month number. Server-rendered. */
+  monthLabels: string[];
   /** Status color used for the line stroke. Defaults to brand. */
   lineColor?: string;
 }
 
 export function RunwayProjection({
   projection,
+  monthLabels,
   lineColor = "var(--color-brand)",
 }: RunwayProjectionProps) {
   // Recharts SSR measure issue: use a width that we know fits the dashboard.
@@ -37,7 +40,7 @@ export function RunwayProjection({
       >
         <XAxis
           dataKey="month"
-          tickFormatter={(m) => (m === 0 ? "Now" : `${m}mo`)}
+          tickFormatter={(m: number) => monthLabels[m] ?? ""}
           stroke="var(--color-foreground-subtle)"
           tick={{ fontSize: 12 }}
           tickLine={false}

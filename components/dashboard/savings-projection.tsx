@@ -30,6 +30,7 @@ export function SavingsProjectionSection({
 
       <RunwayProjection
         projection={projection}
+        monthLabels={buildMonthLabels(projection.points.length)}
         lineColor={
           projection.depletionMonth !== null
             ? "var(--color-status-red)"
@@ -38,6 +39,24 @@ export function SavingsProjectionSection({
       />
     </section>
   );
+}
+
+/**
+ * Build "Now, May, Jun, Jul..." labels anchored at today's month.
+ * Server-rendered so the labels are stable on first paint.
+ */
+function buildMonthLabels(count: number): string[] {
+  const now = new Date();
+  const labels: string[] = [];
+  for (let i = 0; i < count; i++) {
+    if (i === 0) {
+      labels.push("Now");
+      continue;
+    }
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    labels.push(d.toLocaleDateString("en-US", { month: "short" }));
+  }
+  return labels;
 }
 
 function Caption({ projection }: { projection: SavingsProjection }) {
