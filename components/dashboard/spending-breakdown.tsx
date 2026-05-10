@@ -1,18 +1,24 @@
 import { Inbox, TrendingDown, TrendingUp } from "lucide-react";
-import type { CategorySlice, PeriodComparison } from "@/lib/utils/aggregation";
+import type { Slice, PeriodComparison } from "@/lib/utils/aggregation";
 import { formatCurrency } from "@/lib/utils/format";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { CategoryDonut } from "@/components/charts/category-donut";
 
-interface SpendingByCategoryProps {
-  slices: CategorySlice[];
-  comparison: PeriodComparison;
+interface SpendingBreakdownProps {
+  title: string;
+  slices: Slice[];
+  /** Pass to show a "vs prior 30 days" delta in the header. Optional. */
+  comparison?: PeriodComparison;
+  /** Override the default "no spending" empty state copy. Optional. */
+  emptyMessage?: string;
 }
 
-export function SpendingByCategory({
+export function SpendingBreakdown({
+  title,
   slices,
   comparison,
-}: SpendingByCategoryProps) {
+  emptyMessage = "No spending in the last 30 days yet.",
+}: SpendingBreakdownProps) {
   const total = slices.reduce((sum, s) => sum + s.amount, 0);
 
   return (
@@ -20,15 +26,15 @@ export function SpendingByCategory({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-display text-h1 text-[var(--color-foreground)]">
-          Spending by category
+          {title}
         </h2>
-        <PeriodDelta comparison={comparison} />
+        {comparison && <PeriodDelta comparison={comparison} />}
       </div>
 
       {slices.length === 0 ? (
-        <EmptyState />
+        <EmptyState message={emptyMessage} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div className="space-y-8">
           {/* Donut + center total */}
           <div className="relative flex items-center justify-center">
             <CategoryDonut slices={slices} />
@@ -107,7 +113,7 @@ function PeriodDelta({ comparison }: { comparison: PeriodComparison }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({ message }: { message: string }) {
   return (
     <div className="border border-dashed border-[var(--color-border-strong)] rounded p-8 text-center space-y-2">
       <Inbox
@@ -115,9 +121,7 @@ function EmptyState() {
         className="mx-auto text-[var(--color-foreground-subtle)]"
         aria-hidden
       />
-      <p className="text-sm text-[var(--color-foreground-muted)]">
-        No spending in the last 30 days yet.
-      </p>
+      <p className="text-sm text-[var(--color-foreground-muted)]">{message}</p>
     </div>
   );
 }

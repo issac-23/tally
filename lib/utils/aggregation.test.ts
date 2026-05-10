@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupByCategory, comparePeriods } from "./aggregation";
+import { groupByCategory, groupByMerchant, comparePeriods } from "./aggregation";
 
 const food = { id: "food", name: "Food", icon: "utensils", color: "#D4762C" };
 const rent = { id: "rent", name: "Rent", icon: "home", color: "#C49A0A" };
@@ -53,6 +53,77 @@ describe("groupByCategory", () => {
   it("returns empty when total is zero", () => {
     // One transaction with amount 0 — total is 0, no slices to show.
     expect(groupByCategory([tx(1, 0)])).toEqual([]);
+  });
+});
+
+describe("groupByMerchant", () => {
+  function txWithMerchant(amount: number, merchant: string | null) {
+    return { amount, date: tx(0, 0).date, merchant, category: null };
+  }
+
+  it("returns an empty array for no transactions", () => {
+    expect(groupByMerchant([])).toEqual([]);
+  });
+
+  it("sums multiple transactions for the same merchant", () => {
+    const result = groupByMerchant([
+      txWithMerchant(50, "Starbucks"),
+      txWithMerchant(100, "Starbucks"),
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0].category.name).toBe("Starbucks");
+    expect(result[0].amount).toBe(150);
+  });
+
+  it("returns merchants sorted descending by amount", () => {
+    const result = groupByMerchant([
+      txWithMerchant(50, "Starbucks"),
+      txWithMerchant(200, "Amazon"),
+      txWithMerchant(100, "Target"),
+    ]);
+    expect(result.map((s) => s.category.name)).toEqual([
+      "Amazon",
+      "Target",
+      "Starbucks",
+    ]);
+  });
+
+  it("buckets null and empty merchants as Unspecified", () => {
+    const result = groupByMerchant([
+      txWithMerchant(50, null),
+      txWithMerchant(75, ""),
+      txWithMerchant(100, "Amazon"),
+    ]);
+    const unspecified = result.find((s) => s.category.name === "Unspecified");
+    expect(unspecified?.amount).toBe(125);
+  });
+
+  it("preserves merchant casing (Starbucks and starbucks are different)", () => {
+    const result = groupByMerchant([
+      txWithMerchant(50, "Starbucks"),
+      txWithMerchant(100, "starbucks"),
+    ]);
+    expect(result).toHaveLength(2);
+  });
+
+  it("trims surrounding whitespace from merchant names", () => {
+    const result = groupByMerchant([
+      txWithMerchant(50, "  Amazon  "),
+      txWithMerchant(100, "Amazon"),
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0].amount).toBe(150);
+  });
+
+  it("assigns a stable color to the same merchant across calls", () => {
+    const txs = [
+      txWithMerchant(50, "Amazon"),
+      txWithMerchant(100, "Starbucks"),
+    ];
+    const a = groupByMerchant(txs);
+    const b = groupByMerchant(txs);
+    expect(a[0].category.color).toBe(b[0].category.color);
+    expect(a[1].category.color).toBe(b[1].category.color);
   });
 });
 

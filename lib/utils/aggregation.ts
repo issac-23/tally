@@ -16,9 +16,23 @@ interface TxLike {
   amount: number | string;
   date: string; // YYYY-MM-DD
   category?: CategoryRef | null;
+  merchant?: string | null;
 }
 
-export interface CategorySlice {
+// Merchant donut palette: warm + neutral tones, deliberately avoiding the
+// status colors (red/green) so a merchant never looks like a warning.
+const MERCHANT_PALETTE = [
+  "#D4762C", // amber
+  "#5A8A9A", // steel blue
+  "#A0728A", // muted plum
+  "#E89455", // coral
+  "#6B7280", // neutral gray
+  "#C49A0A", // ochre
+  "#7C6A5A", // warm taupe
+  "#9CA3AF", // light gray
+];
+
+export interface Slice {
   category: CategoryRef;
   amount: number;
   share: number; // 0-1, fraction of the total
@@ -29,7 +43,7 @@ export interface CategorySlice {
  * descending by amount. Transactions with no category are bucketed
  * into a synthetic "Uncategorized" entry.
  */
-export function groupByCategory(transactions: TxLike[]): CategorySlice[] {
+export function groupByCategory(transactions: TxLike[]): Slice[] {
   const buckets = new Map<string, { category: CategoryRef; amount: number }>();
 
   const uncategorized: CategoryRef = {
@@ -64,6 +78,38 @@ export function groupByCategory(transactions: TxLike[]): CategorySlice[] {
       share: b.amount / total,
     }))
     .sort((a, b) => b.amount - a.amount);
+}
+
+/**
+ * Group a list of transactions by merchant string, sorted descending by amount.
+ * Empty/null merchants go into "Unspecified". Returns the same Slice shape as
+ * groupByCategory so the donut and breakdown components don't care which axis
+ * they're rendering. Colors are assigned round-robin from a palette.
+ */
+export function groupByMerchant(transactions: TxLike[]): Slice[] {
+  const buckets = new Map<string, number>();
+
+  for (const t of transactions) {
+    const merchant = (t.merchant ?? "").trim() || "Unspecified";
+    const amount = Number(t.amount);
+    buckets.set(merchant, (buckets.get(merchant) ?? 0) + amount);
+  }
+
+  const total = Array.from(buckets.values()).reduce((sum, v) => sum + v, 0);
+  if (total === 0) return [];
+
+  const sorted = Array.from(buckets.entries()).sort((a, b) => b[1] - a[1]);
+
+  return sorted.map(([merchant, amount], i) => ({
+    category: {
+      id: `merchant:${merchant}`,
+      name: merchant,
+      icon: "store",
+      color: MERCHANT_PALETTE[i % MERCHANT_PALETTE.length],
+    },
+    amount,
+    share: amount / total,
+  }));
 }
 
 export interface PeriodComparison {
