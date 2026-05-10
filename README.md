@@ -53,6 +53,8 @@ app-layer filtering.
 - Settings page to update savings and salary at any time
 - Responsive layout for mobile and desktop
 
+![tally dashboard breakdowns](./tally-dashboard.png)
+
 ## Running locally
 
 You'll need a free Supabase project. The `supabase/migrations/` folder
