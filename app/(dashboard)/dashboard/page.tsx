@@ -54,9 +54,7 @@ export default async function DashboardPage() {
     .select("amount, date")
     .gte(
       "date",
-      new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10)
+      daysAgoIso(30)
     );
 
   const txs = recentTransactions ?? [];
@@ -87,9 +85,7 @@ export default async function DashboardPage() {
     )
     .gte(
       "date",
-      new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10)
+      daysAgoIso(60)
     );
 
   const txAgg = (txAggData ?? []) as unknown as Array<{
@@ -99,31 +95,29 @@ export default async function DashboardPage() {
     category: { id: string; name: string; icon: string; color: string } | null;
   }>;
   // Donuts and breakdowns only show the last 30 days of activity.
-  const last30Cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const last30Cutoff = daysAgoIso(30);
   const last30 = txAgg.filter((t) => t.date >= last30Cutoff);
   const categorySlices = groupByCategory(last30);
   const merchantSlices = groupByMerchant(last30);
   const periodComparison = comparePeriods(txAgg);
 
   return (
-    <main className="px-6 py-10">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <main className="px-4 py-6 sm:px-6 sm:py-10">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
 
         {/* Welcome + primary action */}
-        <section className="flex items-end justify-between gap-4 flex-wrap">
+        <section className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-end">
           <div className="space-y-2">
             <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Welcome, {displayName}.
             </h1>
             <p className="text-[var(--color-foreground-muted)]">
-              Here's the lay of the land.
+              Here&apos;s the lay of the land.
             </p>
           </div>
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2.5 transition-colors text-sm"
+            className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2.5 transition-colors text-sm sm:w-auto"
           >
             <Plus size={16} />
             New expense
@@ -134,7 +128,7 @@ export default async function DashboardPage() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-1 space-y-4">
             <RunwayCard runway={runway} />
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
               <SummaryCard label="Today" amount={summary.today} />
               <SummaryCard label="This week" amount={summary.this_week} />
               <SummaryCard label="This month" amount={summary.this_month} />
@@ -172,7 +166,7 @@ export default async function DashboardPage() {
             {recent.length > 0 && (
               <Link
                 href="/transactions"
-                className="text-sm text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)] transition-colors"
+                className="shrink-0 text-sm text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)] transition-colors"
               >
                 See all →
               </Link>
@@ -210,6 +204,12 @@ export default async function DashboardPage() {
   );
 }
 
+function daysAgoIso(days: number) {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+}
+
 interface SummaryCardProps {
   label: string;
   amount: number;
@@ -217,11 +217,11 @@ interface SummaryCardProps {
 
 function SummaryCard({ label, amount }: SummaryCardProps) {
   return (
-    <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-4">
+    <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-4 min-w-0">
       <p className="text-xs uppercase tracking-widest text-[var(--color-foreground-muted)] font-medium">
         {label}
       </p>
-      <p className="text-xl sm:text-2xl font-bold mt-1 text-[var(--color-foreground)]">
+      <p className="text-xl sm:text-2xl font-bold mt-1 text-[var(--color-foreground)] tabular-nums">
         {formatCurrency(amount)}
       </p>
     </div>
