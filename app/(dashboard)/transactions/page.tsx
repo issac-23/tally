@@ -31,11 +31,11 @@ export default async function TransactionsPage() {
   const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
-    <main className="px-6 py-10">
+    <main className="px-4 py-6 sm:px-6 sm:py-10">
       <div className="max-w-3xl mx-auto space-y-8">
 
         {/* Title + add */}
-        <div className="flex items-end justify-between flex-wrap gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-1.5">
             <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Transactions
@@ -46,7 +46,7 @@ export default async function TransactionsPage() {
           </div>
           <Link
             href="/transactions/new"
-            className="inline-flex items-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm"
+            className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm sm:w-auto"
           >
             + Add expense
           </Link>
@@ -76,7 +76,7 @@ export default async function TransactionsPage() {
 
 function EmptyState() {
   return (
-    <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded p-12 text-center space-y-3">
+    <div className="bg-[var(--color-surface-raised)] border border-dashed border-[var(--color-border-strong)] rounded p-8 text-center space-y-3 sm:p-12">
       <Inbox
         size={32}
         className="mx-auto text-[var(--color-foreground-subtle)]"
