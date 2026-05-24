@@ -22,9 +22,9 @@ export function SpendingBreakdown({
   const total = slices.reduce((sum, s) => sum + s.amount, 0);
 
   return (
-    <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
+    <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-display text-h1 text-[var(--color-foreground)]">
           {title}
         </h2>
@@ -62,7 +62,7 @@ export function SpendingBreakdown({
                   <span className="flex-1 text-[var(--color-foreground)] truncate">
                     {s.category.name}
                   </span>
-                  <span className="text-[var(--color-foreground-muted)] tabular-nums">
+                  <span className="shrink-0 text-[var(--color-foreground-muted)] tabular-nums">
                     {formatCurrency(s.amount)}
                   </span>
                 </div>

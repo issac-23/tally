@@ -14,8 +14,8 @@ export function SavingsProjectionSection({
   monthlyAvgSpend,
 }: SavingsProjectionSectionProps) {
   return (
-    <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
-      <div className="flex items-baseline justify-between mb-2 gap-4 flex-wrap">
+    <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
+      <div className="flex flex-col gap-2 mb-2 sm:flex-row sm:items-baseline sm:justify-between">
         <h2 className="font-display text-h1 text-[var(--color-foreground)]">
           Savings projection
         </h2>
