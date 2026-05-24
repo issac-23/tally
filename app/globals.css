@@ -61,6 +61,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
 /* Display headings use Playfair via the .font-display class.
    Tighter line-height since serif display fonts run tall. */
 .font-display {
