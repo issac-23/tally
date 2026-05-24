@@ -6,6 +6,7 @@ import {
   TransactionRow,
   type TransactionRowData,
 } from "@/components/dashboard/transaction-row";
+import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
 import { formatCurrency } from "@/lib/utils/format";
 
 export default async function TransactionsPage() {
@@ -44,12 +45,15 @@ export default async function TransactionsPage() {
               {transactions.length} total · {formatCurrency(total)} spent
             </p>
           </div>
-          <Link
-            href="/transactions/new"
-            className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm sm:w-auto"
-          >
-            + Add expense
-          </Link>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <ExportTransactionsButton transactions={transactions} />
+            <Link
+              href="/transactions/new"
+              className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm sm:w-auto"
+            >
+              + Add expense
+            </Link>
+          </div>
         </div>
 
         {/* List */}
