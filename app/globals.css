@@ -101,14 +101,14 @@ body {
    desktop affordances that come with it are wrong for money: the spinners
    imply money increments by 1, and the scroll wheel silently rewrites the
    amount when the pointer happens to rest over the field mid-scroll. */
+/* `appearance: textfield` on the input is the usual recipe, but it is a
+   non-standard value and the CSS pipeline strips it — the rule then has no
+   declarations left and vanishes. Suppressing the spin buttons directly with
+   a standard value survives. */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
+  appearance: none;
   margin: 0;
-}
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
 }
 
 /* ------------------------------------------------------------------
