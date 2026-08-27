@@ -1,4 +1,4 @@
-import { Inbox, TrendingDown, TrendingUp } from "lucide-react";
+import { Inbox, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import type { Slice, PeriodComparison } from "@/lib/utils/aggregation";
 import { formatCurrency } from "@/lib/utils/format";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -11,6 +11,11 @@ interface SpendingBreakdownProps {
   comparison?: PeriodComparison;
   /** Override the default "no spending" empty state copy. Optional. */
   emptyMessage?: string;
+  /**
+   * Cap the visible rows. Merchants are unbounded — a busy month produced a
+   * 19-row list beside an 8-row category list, so the pair never balanced.
+   */
+  maxItems?: number;
 }
 
 export function SpendingBreakdown({
@@ -18,8 +23,14 @@ export function SpendingBreakdown({
   slices,
   comparison,
   emptyMessage = "No spending in the last 30 days yet.",
+  maxItems,
 }: SpendingBreakdownProps) {
   const total = slices.reduce((sum, s) => sum + s.amount, 0);
+  const visible = maxItems ? slices.slice(0, maxItems) : slices;
+  const hidden = slices.length - visible.length;
+  const hiddenAmount = slices
+    .slice(visible.length)
+    .reduce((sum, s) => sum + s.amount, 0);
 
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
@@ -50,7 +61,7 @@ export function SpendingBreakdown({
 
           {/* Breakdown list */}
           <ul className="space-y-3.5">
-            {slices.map((s) => (
+            {visible.map((s) => (
               <li key={s.category.id} className="space-y-1.5">
                 <div className="flex items-center gap-2.5 text-sm">
                   <span
@@ -78,6 +89,17 @@ export function SpendingBreakdown({
               </li>
             ))}
           </ul>
+
+          {hidden > 0 && (
+            <p className="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm text-[var(--color-foreground-muted)]">
+              <span>
+                {hidden} smaller {hidden === 1 ? "entry" : "entries"}
+              </span>
+              <span className="tabular-nums">
+                {formatCurrency(hiddenAmount)}
+              </span>
+            </p>
+          )}
         </div>
       )}
     </section>
@@ -87,25 +109,38 @@ export function SpendingBreakdown({
 function PeriodDelta({ comparison }: { comparison: PeriodComparison }) {
   if (comparison.deltaPercent === null) {
     return (
-      <span className="text-xs text-[var(--color-foreground-subtle)] uppercase tracking-widest font-medium">
+      <span className="text-xs text-[var(--color-foreground-muted)] uppercase tracking-widest font-medium">
         New period
       </span>
     );
   }
 
-  const up = comparison.deltaPercent > 0;
+  // Round first, then branch — otherwise a delta like +0.4% rounds to "0%"
+  // but still renders as a red increase with an up arrow.
+  const rounded = Math.round(comparison.deltaPercent);
+
+  if (rounded === 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-foreground-muted)]">
+        <Minus size={14} aria-hidden />
+        No change
+        <span className="font-normal">vs prior 30 days</span>
+      </span>
+    );
+  }
+
+  const up = rounded > 0;
   // For spending: up is bad (red), down is good (green).
   const color = up
     ? "text-[var(--color-status-red)]"
     : "text-[var(--color-status-green)]";
   const Icon = up ? TrendingUp : TrendingDown;
-  const sign = up ? "+" : "";
 
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${color}`}>
-      <Icon size={14} />
-      {sign}
-      {Math.round(comparison.deltaPercent)}%
+      <Icon size={14} aria-hidden />
+      {up ? "+" : ""}
+      {rounded}%
       <span className="text-[var(--color-foreground-muted)] font-normal">
         vs prior 30 days
       </span>

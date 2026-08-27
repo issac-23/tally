@@ -112,6 +112,49 @@ export function groupByMerchant(transactions: TxLike[]): Slice[] {
   }));
 }
 
+export interface MonthGroup<T> {
+  /** YYYY-MM, stable key for React and for sorting. */
+  key: string;
+  /** "August 2026" */
+  label: string;
+  total: number;
+  transactions: T[];
+}
+
+/**
+ * Bucket transactions into calendar months, preserving the order they arrive
+ * in (the query already sorts newest-first). A flat list of every expense the
+ * user has ever logged has no scannable structure — month headers with a
+ * subtotal give the eye somewhere to land.
+ */
+export function groupByMonth<T extends { date: string; amount: number | string }>(
+  transactions: T[]
+): MonthGroup<T>[] {
+  const groups = new Map<string, MonthGroup<T>>();
+
+  for (const t of transactions) {
+    const key = t.date.slice(0, 7); // YYYY-MM
+    let group = groups.get(key);
+    if (!group) {
+      const [y, m] = key.split("-").map(Number);
+      group = {
+        key,
+        label: new Date(y, m - 1, 1).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+        total: 0,
+        transactions: [],
+      };
+      groups.set(key, group);
+    }
+    group.total += Number(t.amount);
+    group.transactions.push(t);
+  }
+
+  return Array.from(groups.values());
+}
+
 export interface PeriodComparison {
   current: number;
   prior: number;

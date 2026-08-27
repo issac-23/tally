@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createTransaction } from "./actions";
+import { useErrorShake } from "@/lib/hooks/use-error-shake";
 import type { Category } from "@/types";
 
 interface ExpenseFormProps {
@@ -12,12 +13,16 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
   const today = new Date().toISOString().slice(0, 10);
 
   const [amount, setAmount] = useState<number | string>("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id ?? "");
+  // Deliberately unset. Defaulting to categories[0] silently files expenses
+  // under whichever preset sorts first alphabetically ("Entertainment"),
+  // which is a wrong answer presented as a choice the user made.
+  const [categoryId, setCategoryId] = useState("");
   const [description, setDescription] = useState("");
   const [merchant, setMerchant] = useState("");
   const [date, setDate] = useState(today);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { ref: shakeRef, shake } = useErrorShake<HTMLButtonElement>();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +39,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
 
     if (result?.error) {
       setError(result.error);
+      shake();
       setSubmitting(false);
     }
   }
@@ -92,8 +98,15 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           required
-          className="w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+          className={`w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all ${
+            categoryId
+              ? "text-[var(--color-foreground)]"
+              : "text-[var(--color-foreground-muted)]"
+          }`}
         >
+          <option value="" disabled>
+            Choose a category…
+          </option>
           {categories.map((cat) => (
             <option key={cat.id} value={cat.id}>
               {cat.name}
@@ -105,7 +118,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
       {/* Merchant */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-[var(--color-foreground)]">
-          Merchant <span className="text-[var(--color-foreground-subtle)] font-normal">(optional)</span>
+          Merchant <span className="text-[var(--color-foreground-muted)] font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -119,7 +132,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
       {/* Description */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-[var(--color-foreground)]">
-          Note <span className="text-[var(--color-foreground-subtle)] font-normal">(optional)</span>
+          Note <span className="text-[var(--color-foreground-muted)] font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -130,19 +143,22 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={submitting || !amount || !categoryId}
-        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {submitting ? "Saving..." : "Add expense"}
-      </button>
+      <div className="t-input-wrap space-y-3">
+        <button
+          ref={shakeRef}
+          type="submit"
+          disabled={submitting || !amount || !categoryId}
+          className="btn-primary t-input w-full px-4 py-3"
+        >
+          {submitting ? "Saving..." : "Add expense"}
+        </button>
 
-      {error && (
-        <p className="text-xs text-[var(--color-status-red)] text-center">
-          {error}
-        </p>
-      )}
+        {error && (
+          <p className="text-xs text-[var(--color-status-red)] text-center">
+            {error}
+          </p>
+        )}
+      </div>
     </form>
   );
 }

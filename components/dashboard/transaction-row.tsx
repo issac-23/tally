@@ -31,7 +31,10 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
     t.merchant && t.description ? t.description : t.category?.name ?? "";
 
   return (
-    <div className="grid grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 sm:grid-cols-[40px_minmax(0,1fr)_auto_auto] sm:gap-4 sm:px-5">
+    // One row at every width. The old grid put the delete button in its own
+    // column on mobile, which forced the amount onto a second line under the
+    // icon and left the button floating in the gap beside it.
+    <div className="flex items-center gap-3 px-4 py-3.5 sm:gap-4 sm:px-5 sm:py-4">
       <div
         className="w-10 h-10 rounded flex items-center justify-center shrink-0"
         style={{
@@ -53,8 +56,8 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
         </p>
       </div>
 
-      <div className="text-right shrink-0">
-        <p className="font-semibold text-[var(--color-foreground)]">
+      <div className="shrink-0 text-right">
+        <p className="font-semibold tabular-nums text-[var(--color-foreground)]">
           {formatCurrency(Number(t.amount))}
         </p>
         <p className="text-xs text-[var(--color-foreground-muted)]">
@@ -62,7 +65,7 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
         </p>
       </div>
 
-      <div className="col-start-3 row-span-2 row-start-1 sm:col-auto sm:row-auto">
+      <div className="shrink-0">
         <DeleteTransactionButton id={t.id} />
       </div>
     </div>

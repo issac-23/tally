@@ -8,9 +8,10 @@ import {
   YAxis,
   ReferenceLine,
   ReferenceDot,
+  Tooltip,
 } from "recharts";
 import type { SavingsProjection } from "@/lib/utils/projection";
-import { formatCurrencyCompact } from "@/lib/utils/format";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/utils/format";
 
 const CHART_HEIGHT = 240;
 
@@ -68,6 +69,23 @@ export function RunwayProjection({
             tickLine={false}
             axisLine={false}
             width={56}
+          />
+          <Tooltip
+            cursor={{ stroke: "var(--color-border-strong)", strokeWidth: 1 }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const balance = Number(payload[0].value);
+              return (
+                <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2 shadow-sm">
+                  <p className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-muted)]">
+                    {monthLabels[Number(label)] ?? ""}
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums text-[var(--color-foreground)]">
+                    {formatCurrency(balance, { showCents: false })}
+                  </p>
+                </div>
+              );
+            }}
           />
           {/* Zero baseline for context */}
           <ReferenceLine
