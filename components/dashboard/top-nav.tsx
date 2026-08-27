@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/logo";
 import { SignOutButton } from "@/components/ui/sign-out-button";
+import { NavTabs } from "@/components/dashboard/nav-tabs";
 import { isActiveRoute } from "@/lib/utils/nav";
 
 const navItems = [
@@ -12,31 +13,10 @@ const navItems = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-interface NavLinkProps {
-  href: string;
-  label: string;
-  active: boolean;
-  className?: string;
-}
-
-function NavLink({ href, label, active, className = "" }: NavLinkProps) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={`flex items-center whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-        active
-          ? "bg-[var(--color-brand-subtle)] text-[var(--color-brand)]"
-          : "text-[var(--color-foreground-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)]"
-      } ${className}`}
-    >
-      {label}
-    </Link>
-  );
-}
-
 export function TopNav() {
   const pathname = usePathname();
+  const activeHref =
+    navItems.find((item) => isActiveRoute(pathname, item.href))?.href ?? null;
 
   return (
     <header className="sticky top-0 z-30 bg-[var(--color-background)]/85 backdrop-blur border-b border-[var(--color-border)]">
@@ -47,15 +27,8 @@ export function TopNav() {
             <Logo size="md" withWordmark />
           </Link>
 
-          <nav aria-label="Main" className="hidden sm:flex items-center gap-2">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                active={isActiveRoute(pathname, item.href)}
-              />
-            ))}
+          <nav aria-label="Main" className="hidden sm:block">
+            <NavTabs items={navItems} activeHref={activeHref} />
           </nav>
 
           <div className="shrink-0">
@@ -66,19 +39,8 @@ export function TopNav() {
         {/* Row 2 (mobile only): the three destinations share the width evenly
             so none of them can be clipped off-screen the way a single
             scrolling row clipped "Settings" at 390px. */}
-        <nav
-          aria-label="Main"
-          className="grid grid-cols-3 gap-1 pb-2 sm:hidden"
-        >
-          {navItems.map((item) => (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              active={isActiveRoute(pathname, item.href)}
-              className="justify-center"
-            />
-          ))}
+        <nav aria-label="Main" className="pb-2 sm:hidden">
+          <NavTabs items={navItems} activeHref={activeHref} stretch />
         </nav>
       </div>
     </header>
