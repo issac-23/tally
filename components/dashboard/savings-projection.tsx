@@ -6,12 +6,15 @@ interface SavingsProjectionSectionProps {
   projection: SavingsProjection;
   monthlySalary: number;
   monthlyAvgSpend: number;
+  /** See RunwayCard — no spending logged means no honest projection. */
+  hasSpendingData?: boolean;
 }
 
 export function SavingsProjectionSection({
   projection,
   monthlySalary,
   monthlyAvgSpend,
+  hasSpendingData = true,
 }: SavingsProjectionSectionProps) {
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
@@ -19,13 +22,28 @@ export function SavingsProjectionSection({
         <h2 className="font-display text-h1 text-[var(--color-foreground)]">
           Savings projection
         </h2>
-        <Caption projection={projection} />
+        {hasSpendingData ? (
+          <Caption projection={projection} />
+        ) : (
+          <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-muted)]">
+            Needs spending data
+          </span>
+        )}
       </div>
 
       <p className="text-xs text-[var(--color-foreground-muted)] mb-4">
-        Based on {formatCurrency(monthlySalary)}/mo income and{" "}
-        {formatCurrency(monthlyAvgSpend)}/mo average spending. Dotted because
-        the future is a guess.
+        {hasSpendingData ? (
+          <>
+            Based on {formatCurrency(monthlySalary)}/mo income and{" "}
+            {formatCurrency(monthlyAvgSpend)}/mo average spending. Dotted
+            because the future is a guess.
+          </>
+        ) : (
+          <>
+            Assumes {formatCurrency(monthlySalary)}/mo income and no spending
+            yet — log expenses to see a real curve.
+          </>
+        )}
       </p>
 
       <RunwayProjection

@@ -1,4 +1,51 @@
 import { describe, it, expect } from "vitest";
+import { groupByMonth } from "./aggregation";
+
+describe("groupByMonth", () => {
+  it("returns an empty array for no transactions", () => {
+    expect(groupByMonth([])).toEqual([]);
+  });
+
+  it("buckets by calendar month and subtotals each one", () => {
+    const groups = groupByMonth([
+      { date: "2026-08-26", amount: 10 },
+      { date: "2026-08-01", amount: 5.5 },
+      { date: "2026-07-30", amount: 20 },
+    ]);
+
+    expect(groups).toHaveLength(2);
+    expect(groups[0].key).toBe("2026-08");
+    expect(groups[0].label).toBe("August 2026");
+    expect(groups[0].total).toBe(15.5);
+    expect(groups[0].transactions).toHaveLength(2);
+    expect(groups[1].key).toBe("2026-07");
+    expect(groups[1].total).toBe(20);
+  });
+
+  it("preserves the incoming order rather than re-sorting", () => {
+    const groups = groupByMonth([
+      { date: "2026-07-01", amount: 1 },
+      { date: "2026-08-01", amount: 1 },
+    ]);
+    expect(groups.map((g) => g.key)).toEqual(["2026-07", "2026-08"]);
+  });
+
+  it("coerces string amounts, as Postgres numerics arrive", () => {
+    const groups = groupByMonth([
+      { date: "2026-08-01", amount: "10.25" },
+      { date: "2026-08-02", amount: "4.75" },
+    ]);
+    expect(groups[0].total).toBe(15);
+  });
+
+  it("keeps months separate across a year boundary", () => {
+    const groups = groupByMonth([
+      { date: "2026-01-05", amount: 3 },
+      { date: "2025-01-05", amount: 7 },
+    ]);
+    expect(groups.map((g) => g.label)).toEqual(["January 2026", "January 2025"]);
+  });
+});
 import { groupByCategory, groupByMerchant, comparePeriods } from "./aggregation";
 
 const food = { id: "food", name: "Food", icon: "utensils", color: "#D4762C" };
