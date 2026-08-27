@@ -1,5 +1,105 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { monthlyAverageSpend, spendingSummary } from "./spending";
+import {
+  monthlyAverageSpend,
+  monthlyBurnRate,
+  spendingSummary,
+} from "./spending";
+
+describe("monthlyBurnRate", () => {
+  const iso = (daysAgo: number) => {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString().slice(0, 10);
+  };
+
+  it("is zero with nothing logged", () => {
+    expect(monthlyBurnRate([], [])).toBe(0);
+  });
+
+  it("counts one-off spending inside the 30-day window", () => {
+    expect(
+      monthlyBurnRate(
+        [
+          { amount: 100, date: iso(1), recurrence: "once" },
+          { amount: 50, date: iso(29), recurrence: "once" },
+        ],
+        []
+      )
+    ).toBe(150);
+  });
+
+  it("ignores one-off spending outside the window", () => {
+    expect(
+      monthlyBurnRate([{ amount: 100, date: iso(45), recurrence: "once" }], [])
+    ).toBe(0);
+  });
+
+  it("adds a standing commitment at its monthly equivalent", () => {
+    expect(
+      monthlyBurnRate(
+        [],
+        [
+          {
+            amount: 1850,
+            date: iso(5),
+            merchant: "Greystar",
+            recurrence: "monthly",
+            category_id: "housing",
+          },
+        ]
+      )
+    ).toBe(1850);
+  });
+
+  it("counts a commitment even when it was last logged long ago", () => {
+    // A yearly bill from eight months back is still owed, so it keeps
+    // contributing its $100/mo instead of dropping out of the window.
+    expect(
+      monthlyBurnRate(
+        [],
+        [
+          {
+            amount: 1200,
+            date: iso(240),
+            merchant: "Geico",
+            recurrence: "yearly",
+            category_id: "insurance",
+          },
+        ]
+      )
+    ).toBeCloseTo(100, 6);
+  });
+
+  it("does not double count a recurring expense that also sits in the window", () => {
+    const rent = {
+      amount: 1850,
+      date: iso(3),
+      merchant: "Greystar",
+      recurrence: "monthly",
+      category_id: "housing",
+    };
+    // The same row comes back from both queries; it must contribute 1850.
+    expect(monthlyBurnRate([rent], [rent])).toBe(1850);
+  });
+
+  it("combines one-off and recurring spending", () => {
+    const rent = {
+      amount: 1850,
+      date: iso(2),
+      merchant: "Greystar",
+      recurrence: "monthly",
+      category_id: "housing",
+    };
+    expect(
+      monthlyBurnRate([{ amount: 200, date: iso(2), recurrence: "once" }, rent], [rent])
+    ).toBe(2050);
+  });
+
+  it("treats a missing recurrence as one-off, so pre-migration rows keep their meaning", () => {
+    expect(monthlyBurnRate([{ amount: 75, date: iso(1) }], [])).toBe(75);
+  });
+});
 
 // Build a transaction dated N days before the (mocked) "now".
 function tx(daysAgoFromNow: number, amount: number | string) {
