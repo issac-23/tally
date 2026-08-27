@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createTransaction } from "./actions";
+import { useErrorShake } from "@/lib/hooks/use-error-shake";
 import type { Category } from "@/types";
 
 interface ExpenseFormProps {
@@ -21,6 +22,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
   const [date, setDate] = useState(today);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { ref: shakeRef, shake } = useErrorShake<HTMLButtonElement>();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +39,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
 
     if (result?.error) {
       setError(result.error);
+      shake();
       setSubmitting(false);
     }
   }
@@ -140,19 +143,22 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={submitting || !amount || !categoryId}
-        className="btn-primary w-full px-4 py-3"
-      >
-        {submitting ? "Saving..." : "Add expense"}
-      </button>
+      <div className="t-input-wrap space-y-3">
+        <button
+          ref={shakeRef}
+          type="submit"
+          disabled={submitting || !amount || !categoryId}
+          className="btn-primary t-input w-full px-4 py-3"
+        >
+          {submitting ? "Saving..." : "Add expense"}
+        </button>
 
-      {error && (
-        <p className="text-xs text-[var(--color-status-red)] text-center">
-          {error}
-        </p>
-      )}
+        {error && (
+          <p className="text-xs text-[var(--color-status-red)] text-center">
+            {error}
+          </p>
+        )}
+      </div>
     </form>
   );
 }
