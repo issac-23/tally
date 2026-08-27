@@ -8,6 +8,7 @@ import {
 } from "@/components/dashboard/transaction-row";
 import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
 import { formatCurrency } from "@/lib/utils/format";
+import { groupByMonth } from "@/lib/utils/aggregation";
 
 export default async function TransactionsPage() {
   const supabase = await createClient();
@@ -56,20 +57,34 @@ export default async function TransactionsPage() {
           </div>
         </div>
 
-        {/* List */}
+        {/* List, bucketed by month so a long history stays scannable */}
         {transactions.length > 0 ? (
-          <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded overflow-hidden">
-            {transactions.map((t, i) => (
-              <li
-                key={t.id}
-                className={
-                  i > 0 ? "border-t border-[var(--color-border)]" : ""
-                }
-              >
-                <TransactionRow transaction={t} />
-              </li>
+          <div className="space-y-6">
+            {groupByMonth(transactions).map((group) => (
+              <section key={group.key} className="space-y-2">
+                <div className="flex items-baseline justify-between gap-3 px-1">
+                  <h2 className="text-sm font-semibold text-[var(--color-foreground)]">
+                    {group.label}
+                  </h2>
+                  <p className="text-sm tabular-nums text-[var(--color-foreground-muted)]">
+                    {formatCurrency(group.total)}
+                  </p>
+                </div>
+                <ul className="overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                  {group.transactions.map((t, i) => (
+                    <li
+                      key={t.id}
+                      className={
+                        i > 0 ? "border-t border-[var(--color-border)]" : ""
+                      }
+                    >
+                      <TransactionRow transaction={t} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         ) : (
           <EmptyState />
         )}
