@@ -1,4 +1,4 @@
-import { Inbox, TrendingDown, TrendingUp } from "lucide-react";
+import { Inbox, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import type { Slice, PeriodComparison } from "@/lib/utils/aggregation";
 import { formatCurrency } from "@/lib/utils/format";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -93,19 +93,32 @@ function PeriodDelta({ comparison }: { comparison: PeriodComparison }) {
     );
   }
 
-  const up = comparison.deltaPercent > 0;
+  // Round first, then branch — otherwise a delta like +0.4% rounds to "0%"
+  // but still renders as a red increase with an up arrow.
+  const rounded = Math.round(comparison.deltaPercent);
+
+  if (rounded === 0) {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-foreground-muted)]">
+        <Minus size={14} aria-hidden />
+        No change
+        <span className="font-normal">vs prior 30 days</span>
+      </span>
+    );
+  }
+
+  const up = rounded > 0;
   // For spending: up is bad (red), down is good (green).
   const color = up
     ? "text-[var(--color-status-red)]"
     : "text-[var(--color-status-green)]";
   const Icon = up ? TrendingUp : TrendingDown;
-  const sign = up ? "+" : "";
 
   return (
     <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${color}`}>
-      <Icon size={14} />
-      {sign}
-      {Math.round(comparison.deltaPercent)}%
+      <Icon size={14} aria-hidden />
+      {up ? "+" : ""}
+      {rounded}%
       <span className="text-[var(--color-foreground-muted)] font-normal">
         vs prior 30 days
       </span>
