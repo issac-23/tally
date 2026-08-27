@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { Tag } from "lucide-react";
 import { createCategory, deleteCategory } from "./actions";
+import { SuccessCheck } from "@/components/ui/success-check";
+import { useErrorShake } from "@/lib/hooks/use-error-shake";
 
 const CATEGORY_COLORS = [
   "#D4762C",
@@ -30,6 +32,9 @@ export function CategoryForm({ categories }: CategoryFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  // A duplicate name is a field-level problem, so the name input is what
+  // shakes — not the button.
+  const { ref: shakeRef, shake, clearError } = useErrorShake<HTMLInputElement>();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,6 +46,7 @@ export function CategoryForm({ categories }: CategoryFormProps) {
 
     if (result.error) {
       setError(result.error);
+      shake();
     } else {
       setName("");
       setSuccess(true);
@@ -56,15 +62,20 @@ export function CategoryForm({ categories }: CategoryFormProps) {
           Category name
         </label>
         <input
+          ref={shakeRef}
           type="text"
           value={name}
           onChange={(e) => {
             setName(e.target.value);
             setSuccess(false);
+            // Correcting the value clears the error rather than leaving the
+            // field sitting in a red state they're already fixing.
+            if (error) setError(null);
+            clearError();
           }}
           maxLength={32}
           placeholder="Books, School, Coffee..."
-          className="w-full rounded border border-[var(--color-border-strong)] bg-white px-3 py-2.5 text-[var(--color-foreground)] transition-all focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)]"
+          className="t-input w-full rounded border border-[var(--color-border-strong)] bg-white px-3 py-2.5 text-[var(--color-foreground)] focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)] [&.is-error]:border-[var(--color-status-red)]"
         />
       </div>
 
@@ -100,9 +111,13 @@ export function CategoryForm({ categories }: CategoryFormProps) {
           {submitting ? "Adding..." : "Add category"}
         </button>
 
-        {success && (
-          <p className="text-xs text-[var(--color-status-green)]">Added</p>
-        )}
+        <p
+          className="flex items-center gap-1.5 text-xs text-[var(--color-status-green)]"
+          aria-live="polite"
+        >
+          <SuccessCheck shown={success} />
+          {success ? "Added" : ""}
+        </p>
       </div>
 
       {error && <p className="text-xs text-[var(--color-status-red)]">{error}</p>}

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { updateProfile } from "./actions";
+import { SuccessCheck } from "@/components/ui/success-check";
+import { useErrorShake } from "@/lib/hooks/use-error-shake";
 
 const SAVED_BADGE_TIMEOUT_MS = 2500;
 
@@ -19,6 +21,7 @@ export function SettingsForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
+  const { ref: shakeRef, shake } = useErrorShake<HTMLButtonElement>();
 
   // Detect dirty state so the Save button feels purposeful.
   const isDirty =
@@ -41,6 +44,7 @@ export function SettingsForm({
 
     if (result.error) {
       setError(result.error);
+      shake();
     } else {
       setSavedAt(Date.now());
     }
@@ -60,25 +64,30 @@ export function SettingsForm({
         onChange={setSalary}
       />
 
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="submit"
-          disabled={submitting || !isDirty || savings === "" || salary === ""}
-          className="btn-primary px-4 py-2.5 text-sm"
-        >
-          {submitting ? "Saving..." : "Save changes"}
-        </button>
+      <div className="t-input-wrap space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            ref={shakeRef}
+            type="submit"
+            disabled={submitting || !isDirty || savings === "" || salary === ""}
+            className="btn-primary t-input px-4 py-2.5 text-sm"
+          >
+            {submitting ? "Saving..." : "Save changes"}
+          </button>
 
-        {savedAt && !isDirty && !error && (
-          <p className="text-xs text-[var(--color-status-green)] transition-opacity">
-            Saved
+          <p
+            className="flex items-center gap-1.5 text-xs text-[var(--color-status-green)]"
+            aria-live="polite"
+          >
+            <SuccessCheck shown={Boolean(savedAt) && !isDirty && !error} />
+            {savedAt && !isDirty && !error ? "Saved" : ""}
           </p>
+        </div>
+
+        {error && (
+          <p className="text-xs text-[var(--color-status-red)]">{error}</p>
         )}
       </div>
-
-      {error && (
-        <p className="text-xs text-[var(--color-status-red)]">{error}</p>
-      )}
     </form>
   );
 }
