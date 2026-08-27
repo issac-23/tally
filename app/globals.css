@@ -66,6 +66,20 @@ body {
   outline-offset: 2px;
 }
 
+/* Currency fields are type=number for the mobile numeric keypad, but the
+   desktop affordances that come with it are wrong for money: the spinners
+   imply money increments by 1, and the scroll wheel silently rewrites the
+   amount when the pointer happens to rest over the field mid-scroll. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 /* Display headings use Playfair via the .font-display class.
    Tighter line-height since serif display fonts run tall. */
 .font-display {

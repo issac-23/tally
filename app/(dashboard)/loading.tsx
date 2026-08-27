@@ -1,8 +1,7 @@
-import { Logo } from "@/components/ui/logo";
-
 export default function DashboardLoading() {
   return (
-    <main className="px-4 py-6 sm:px-6 sm:py-10">
+    <main className="px-4 py-6 sm:px-6 sm:py-10" role="status" aria-live="polite">
+      <span className="sr-only">Loading your dashboard…</span>
       <div className="mx-auto max-w-7xl space-y-6 sm:space-y-8">
         <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-3">
@@ -15,7 +14,7 @@ export default function DashboardLoading() {
         <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="space-y-4">
             <SkeletonCard className="h-56" />
-            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+            <div className="grid grid-cols-3 gap-3">
               <SkeletonCard className="h-24" />
               <SkeletonCard className="h-24" />
               <SkeletonCard className="h-24" />
@@ -37,11 +36,14 @@ export default function DashboardLoading() {
 
 function SkeletonCard({ className }: { className: string }) {
   return (
+    // A skeleton stands in for the content that's coming. Repeating the app
+    // logo in every card said "Tally" seven times and nothing about the
+    // shape of the page underneath.
     <div
       className={`rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 ${className}`}
+      aria-hidden
     >
-      <Logo size="sm" />
-      <div className="mt-6 space-y-3">
+      <div className="space-y-3">
         <div className="h-3 w-1/3 animate-pulse rounded bg-[var(--color-surface)]" />
         <div className="h-3 w-2/3 animate-pulse rounded bg-[var(--color-surface)]" />
       </div>
