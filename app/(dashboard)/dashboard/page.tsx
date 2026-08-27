@@ -121,7 +121,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/transactions/new"
-            className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2.5 transition-colors text-sm sm:w-auto"
+            className="btn-primary w-full px-4 py-2.5 text-sm sm:w-auto"
           >
             <Plus size={16} />
             New expense
@@ -132,10 +132,13 @@ export default async function DashboardPage() {
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-1 space-y-4">
             <RunwayCard runway={runway} hasSpendingData={hasSpendingData} />
+            {/* "Last 7 / 30 days" rather than "This week / month": the util
+                measures trailing windows, not calendar periods. It also stops
+                the longest label wrapping in a 3-up grid on a phone. */}
             <div className="grid grid-cols-3 gap-3">
               <SummaryCard label="Today" amount={summary.today} />
-              <SummaryCard label="This week" amount={summary.this_week} />
-              <SummaryCard label="This month" amount={summary.this_month} />
+              <SummaryCard label="Last 7 days" amount={summary.this_week} />
+              <SummaryCard label="Last 30 days" amount={summary.this_month} />
             </div>
           </div>
           <div className="lg:col-span-2">
@@ -149,7 +152,9 @@ export default async function DashboardPage() {
         </section>
 
         {/* Spending breakdowns side by side */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* items-start so the shorter card keeps its own height instead of
+            stretching to match its neighbour and trailing empty space. */}
+        <section className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
           <SpendingBreakdown
             title="Spending by category"
             slices={categorySlices}
@@ -158,6 +163,7 @@ export default async function DashboardPage() {
           <SpendingBreakdown
             title="Spending by merchant"
             slices={merchantSlices}
+            maxItems={8}
             emptyMessage="No merchants tracked yet. Add a merchant when you log an expense to see this break down."
           />
         </section>

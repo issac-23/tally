@@ -11,6 +11,11 @@ interface SpendingBreakdownProps {
   comparison?: PeriodComparison;
   /** Override the default "no spending" empty state copy. Optional. */
   emptyMessage?: string;
+  /**
+   * Cap the visible rows. Merchants are unbounded — a busy month produced a
+   * 19-row list beside an 8-row category list, so the pair never balanced.
+   */
+  maxItems?: number;
 }
 
 export function SpendingBreakdown({
@@ -18,8 +23,14 @@ export function SpendingBreakdown({
   slices,
   comparison,
   emptyMessage = "No spending in the last 30 days yet.",
+  maxItems,
 }: SpendingBreakdownProps) {
   const total = slices.reduce((sum, s) => sum + s.amount, 0);
+  const visible = maxItems ? slices.slice(0, maxItems) : slices;
+  const hidden = slices.length - visible.length;
+  const hiddenAmount = slices
+    .slice(visible.length)
+    .reduce((sum, s) => sum + s.amount, 0);
 
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
@@ -50,7 +61,7 @@ export function SpendingBreakdown({
 
           {/* Breakdown list */}
           <ul className="space-y-3.5">
-            {slices.map((s) => (
+            {visible.map((s) => (
               <li key={s.category.id} className="space-y-1.5">
                 <div className="flex items-center gap-2.5 text-sm">
                   <span
@@ -78,6 +89,17 @@ export function SpendingBreakdown({
               </li>
             ))}
           </ul>
+
+          {hidden > 0 && (
+            <p className="flex items-center justify-between border-t border-[var(--color-border)] pt-3 text-sm text-[var(--color-foreground-muted)]">
+              <span>
+                {hidden} smaller {hidden === 1 ? "entry" : "entries"}
+              </span>
+              <span className="tabular-nums">
+                {formatCurrency(hiddenAmount)}
+              </span>
+            </p>
+          )}
         </div>
       )}
     </section>
@@ -87,7 +109,7 @@ export function SpendingBreakdown({
 function PeriodDelta({ comparison }: { comparison: PeriodComparison }) {
   if (comparison.deltaPercent === null) {
     return (
-      <span className="text-xs text-[var(--color-foreground-subtle)] uppercase tracking-widest font-medium">
+      <span className="text-xs text-[var(--color-foreground-muted)] uppercase tracking-widest font-medium">
         New period
       </span>
     );
