@@ -12,7 +12,7 @@ import {
 import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
 import { projectSavings } from "@/lib/utils/projection";
-import { monthlyAverageSpend, spendingSummary } from "@/lib/utils/spending";
+import { monthlyBurnRate, spendingSummary } from "@/lib/utils/spending";
 import {
   groupByCategory,
   groupByMerchant,
@@ -51,20 +51,31 @@ export default async function DashboardPage() {
   // Pull last 30 days of transactions to compute the runway baseline.
   const { data: recentTransactions } = await supabase
     .from("transactions")
-    .select("amount, date")
+    .select("amount, date, recurrence")
     .gte(
       "date",
       daysAgoIso(30)
     );
 
+  // Standing commitments count every month regardless of when they were last
+  // logged, so they can't be limited to the 30-day window — a yearly bill
+  // logged eight months ago is still owed.
+  const { data: recurringData } = await supabase
+    .from("transactions")
+    .select("amount, date, merchant, recurrence, category_id")
+    .neq("recurrence", "once")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
+
   const txs = recentTransactions ?? [];
+  const recurring = recurringData ?? [];
   // No spending in the window means no burn rate, which means the runway and
   // projection have nothing real to say yet. Both cards switch to a
   // needs-data state rather than reporting "infinite runway" as good news.
-  const hasSpendingData = txs.length > 0;
-  const avgSpend = monthlyAverageSpend(txs);
-  const runway = calculateRunway(savings, salary, avgSpend);
-  const projection = projectSavings(savings, salary, avgSpend);
+  const hasSpendingData = txs.length > 0 || recurring.length > 0;
+  const burnRate = monthlyBurnRate(txs, recurring);
+  const runway = calculateRunway(savings, salary, burnRate);
+  const projection = projectSavings(savings, salary, burnRate);
   const summary = spendingSummary(txs);
 
   // Latest 5 transactions with category info, for the "Recent" section.
@@ -73,7 +84,7 @@ export default async function DashboardPage() {
   const { data: recentData } = await supabase
     .from("transactions")
     .select(
-      "id, amount, description, merchant, date, category:categories(id, name, icon, color)"
+      "id, amount, description, merchant, date, recurrence, category:categories(id, name, icon, color)"
     )
     .order("date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -142,7 +153,7 @@ export default async function DashboardPage() {
             <SavingsProjectionSection
               projection={projection}
               monthlySalary={salary}
-              monthlyAvgSpend={avgSpend}
+              monthlyAvgSpend={burnRate}
               hasSpendingData={hasSpendingData}
             />
           </div>

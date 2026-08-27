@@ -23,7 +23,7 @@ export default async function TransactionsPage() {
   const { data: transactionsData } = await supabase
     .from("transactions")
     .select(
-      "id, amount, description, merchant, date, category:categories(id, name, icon, color)"
+      "id, amount, description, merchant, date, recurrence, category:categories(id, name, icon, color)"
     )
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });

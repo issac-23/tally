@@ -1,4 +1,6 @@
+import { Repeat } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
+import { recurrenceBadge } from "@/lib/utils/recurrence";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import { DeleteTransactionButton } from "./delete-transaction-button";
 
@@ -8,6 +10,7 @@ export interface TransactionRowData {
   description: string | null;
   merchant: string | null;
   date: string;
+  recurrence?: string | null;
   category: {
     id: string;
     name: string;
@@ -26,6 +29,7 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
     day: "numeric",
   });
 
+  const badge = recurrenceBadge(t.recurrence);
   const primary = t.merchant || t.description || "—";
   const secondary =
     t.merchant && t.description ? t.description : t.category?.name ?? "";
@@ -51,8 +55,17 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
         <p className="font-medium text-[var(--color-foreground)] truncate">
           {primary}
         </p>
-        <p className="text-xs text-[var(--color-foreground-muted)] truncate">
-          {secondary}
+        <p className="flex items-center gap-1.5 text-xs text-[var(--color-foreground-muted)]">
+          <span className="truncate">{secondary}</span>
+          {badge && (
+            <span
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-foreground-muted)]"
+              title={`Repeats ${badge.toLowerCase()} — counted every month toward your runway`}
+            >
+              <Repeat size={9} aria-hidden />
+              {badge}
+            </span>
+          )}
         </p>
       </div>
 

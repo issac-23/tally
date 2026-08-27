@@ -3,6 +3,11 @@
  * All amounts are positive numbers (expenses).
  */
 
+import {
+  recurrenceOption,
+  recurringMonthlyTotal,
+} from "@/lib/utils/recurrence";
+
 interface AmountDated {
   amount: number | string;
   date: string; // YYYY-MM-DD
@@ -36,6 +41,36 @@ export function monthlyAverageSpend(transactions: AmountDated[]): number {
   return transactions
     .filter((t) => isOnOrAfter(t.date, cutoff))
     .reduce((sum, t) => sum + Number(t.amount), 0);
+}
+
+/**
+ * What the user is committed to spending per month — the figure the runway
+ * and projection are built on.
+ *
+ * This deliberately differs from monthlyAverageSpend, which reports what was
+ * actually spent in the last 30 days and stays the number behind the summary
+ * tiles and breakdowns. Runway needs a forward-looking rate instead:
+ *
+ *  - one-off expenses count only while they sit in the 30-day window;
+ *  - standing commitments count at their monthly equivalent every month,
+ *    whenever they were last logged, so a yearly bill spreads over the year
+ *    rather than wrecking the runway on the day it lands.
+ *
+ * Recurring rows are excluded from the window sum so they aren't counted
+ * twice in the month they happen to fall in.
+ */
+export function monthlyBurnRate(
+  recentTransactions: Array<AmountDated & { recurrence?: string | null }>,
+  recurringTransactions: Parameters<typeof recurringMonthlyTotal>[0]
+): number {
+  const cutoff = daysAgo(30);
+
+  const oneOff = recentTransactions
+    .filter((t) => recurrenceOption(t.recurrence).perMonth === 0)
+    .filter((t) => isOnOrAfter(t.date, cutoff))
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  return oneOff + recurringMonthlyTotal(recurringTransactions);
 }
 
 /**

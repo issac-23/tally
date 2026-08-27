@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isRecurrence } from "@/lib/utils/recurrence";
 
 export interface CreateTransactionInput {
   amount: number;
@@ -10,6 +11,7 @@ export interface CreateTransactionInput {
   description?: string;
   merchant?: string;
   date: string; // YYYY-MM-DD
+  recurrence?: string;
 }
 
 export interface CreateTransactionResult {
@@ -28,6 +30,12 @@ export async function createTransaction(
   if (!input.date) {
     return { error: "Pick a date." };
   }
+  // Guard here as well as in the CHECK constraint, so a bad value comes back
+  // as a readable message instead of a Postgres constraint error.
+  const recurrence = input.recurrence ?? "once";
+  if (!isRecurrence(recurrence)) {
+    return { error: "Pick how often this repeats." };
+  }
 
   const supabase = await createClient();
   const {
@@ -45,6 +53,7 @@ export async function createTransaction(
     description: input.description || null,
     merchant: input.merchant || null,
     date: input.date,
+    recurrence,
   });
 
   if (error) {
