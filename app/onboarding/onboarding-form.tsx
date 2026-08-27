@@ -53,7 +53,7 @@ export function OnboardingForm({
       <button
         type="submit"
         disabled={submitting || savings === "" || salary === ""}
-        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn-primary w-full px-4 py-3"
       >
         {submitting ? "Setting things up..." : "Continue to dashboard"}
       </button>
@@ -64,7 +64,7 @@ export function OnboardingForm({
         </p>
       )}
 
-      <p className="text-xs text-[var(--color-foreground-subtle)] text-center">
+      <p className="text-xs text-[var(--color-foreground-muted)] text-center">
         You can change these anytime in Settings.
       </p>
     </form>

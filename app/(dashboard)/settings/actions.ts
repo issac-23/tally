@@ -14,6 +14,10 @@ export interface CreateCategoryResult {
   success?: boolean;
 }
 
+export interface DeleteCategoryResult {
+  error?: string;
+}
+
 export async function updateProfile(
   savingsBalance: number,
   monthlySalary: number
@@ -97,4 +101,46 @@ export async function createCategory(
   revalidatePath("/transactions/new");
   revalidatePath("/dashboard");
   return { success: true };
+}
+
+/**
+ * Delete one of the user's own custom categories.
+ *
+ * Presets are protected by RLS (the delete policy requires is_preset = false
+ * and a matching user_id), and transactions.category_id is ON DELETE SET NULL,
+ * so existing expenses survive the delete and fall back to "Uncategorized"
+ * rather than disappearing with the category.
+ */
+export async function deleteCategory(
+  id: string
+): Promise<DeleteCategoryResult> {
+  if (!id) {
+    return { error: "Missing category id." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You're not signed in." };
+  }
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .eq("is_preset", false);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/transactions/new");
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  return {};
 }

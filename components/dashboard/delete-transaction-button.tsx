@@ -45,7 +45,10 @@ export function DeleteTransactionButton({ id }: DeleteTransactionButtonProps) {
         aria-label="Confirm delete"
         className="shrink-0 px-2.5 py-1.5 -mr-2 rounded text-xs font-medium bg-[var(--color-status-red-bg)] text-[var(--color-status-red)] hover:bg-[var(--color-status-red)] hover:text-white transition-colors disabled:opacity-60"
       >
-        {isPending ? "Deleting..." : "Tap to confirm"}
+        {/* transitions.dev text-states-swap: the label moves from the ask to
+            the in-flight state instead of cutting between two words on the
+            one control that destroys data. */}
+        <SwapLabel value={isPending ? "Deleting…" : "Tap to confirm"} />
       </button>
     );
   }
@@ -55,10 +58,50 @@ export function DeleteTransactionButton({ id }: DeleteTransactionButtonProps) {
       type="button"
       onClick={handleClick}
       aria-label="Delete transaction"
-      className="shrink-0 p-2 -mr-2 rounded text-[var(--color-foreground-subtle)] hover:text-[var(--color-status-red)] hover:bg-[var(--color-status-red-bg)] transition-colors"
+      className="shrink-0 p-2 -mr-2 rounded text-[var(--color-foreground-muted)] hover:text-[var(--color-status-red)] hover:bg-[var(--color-status-red-bg)] transition-colors"
     >
       <TrashIcon />
     </button>
+  );
+}
+
+/**
+ * Three-phase swap from the transitions.dev snippet: exit up with blur,
+ * change the text while it's invisible and parked below, then let it rise
+ * back to rest.
+ */
+function SwapLabel({ value }: { value: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const previous = useRef(value);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || previous.current === value) return;
+    previous.current = value;
+
+    const dur =
+      parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--text-swap-dur"
+        )
+      ) || 150;
+
+    el.classList.add("is-exit");
+    const t = setTimeout(() => {
+      el.textContent = value;
+      el.classList.remove("is-exit");
+      el.classList.add("is-enter-start");
+      void el.offsetHeight; // force reflow so the return transitions
+      el.classList.remove("is-enter-start");
+    }, dur);
+
+    return () => clearTimeout(t);
+  }, [value]);
+
+  return (
+    <span ref={ref} className="t-text-swap">
+      {value}
+    </span>
   );
 }
 

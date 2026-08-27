@@ -22,8 +22,19 @@ export default async function SettingsPage() {
   const savings = Number(profile?.savings_balance ?? 0);
   const salary = Number(profile?.monthly_salary ?? 0);
 
+  // Only the user's own categories — presets aren't editable, so listing
+  // them here would offer a Remove button that RLS would always reject.
+  const { data: categoryData } = await supabase
+    .from("categories")
+    .select("id, name, color")
+    .eq("user_id", user.id)
+    .eq("is_preset", false)
+    .order("name", { ascending: true });
+
+  const customCategories = categoryData ?? [];
+
   return (
-    <main className="px-6 py-10">
+    <main className="px-4 py-6 sm:px-6 sm:py-10">
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="space-y-1.5">
           <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
@@ -57,7 +68,7 @@ export default async function SettingsPage() {
                 Add your own buckets for expenses that do not fit the presets.
               </p>
             </div>
-            <CategoryForm />
+            <CategoryForm categories={customCategories} />
           </div>
         </section>
       </div>
