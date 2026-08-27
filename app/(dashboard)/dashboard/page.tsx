@@ -58,6 +58,10 @@ export default async function DashboardPage() {
     );
 
   const txs = recentTransactions ?? [];
+  // No spending in the window means no burn rate, which means the runway and
+  // projection have nothing real to say yet. Both cards switch to a
+  // needs-data state rather than reporting "infinite runway" as good news.
+  const hasSpendingData = txs.length > 0;
   const avgSpend = monthlyAverageSpend(txs);
   const runway = calculateRunway(savings, salary, avgSpend);
   const projection = projectSavings(savings, salary, avgSpend);
@@ -127,8 +131,8 @@ export default async function DashboardPage() {
         {/* Runway + today/week/month on the left, projection chart on the right */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-1 space-y-4">
-            <RunwayCard runway={runway} />
-            <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-3">
+            <RunwayCard runway={runway} hasSpendingData={hasSpendingData} />
+            <div className="grid grid-cols-3 gap-3">
               <SummaryCard label="Today" amount={summary.today} />
               <SummaryCard label="This week" amount={summary.this_week} />
               <SummaryCard label="This month" amount={summary.this_month} />
@@ -139,6 +143,7 @@ export default async function DashboardPage() {
               projection={projection}
               monthlySalary={salary}
               monthlyAvgSpend={avgSpend}
+              hasSpendingData={hasSpendingData}
             />
           </div>
         </section>

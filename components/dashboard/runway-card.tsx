@@ -1,8 +1,16 @@
+import Link from "next/link";
 import type { RunwayInfo, RunwayStatus } from "@/types";
 import { formatCurrency } from "@/lib/utils/format";
 
 interface RunwayCardProps {
   runway: RunwayInfo;
+  /**
+   * False when the user has logged no spending in the runway window. Without
+   * a burn rate the math technically returns "infinite runway", but stating
+   * that as a healthy result is a claim we haven't earned — so we show an
+   * explicit needs-data state instead.
+   */
+  hasSpendingData?: boolean;
 }
 
 const statusStyles: Record<
@@ -31,7 +39,14 @@ const statusStyles: Record<
   },
 };
 
-export function RunwayCard({ runway }: RunwayCardProps) {
+export function RunwayCard({
+  runway,
+  hasSpendingData = true,
+}: RunwayCardProps) {
+  if (!hasSpendingData) {
+    return <RunwayNeedsData runway={runway} />;
+  }
+
   const styles = statusStyles[runway.status];
 
   // Bar fill: 0 months -> 0%, 12+ months -> 100%, linear in between.
@@ -94,6 +109,52 @@ export function RunwayCard({ runway }: RunwayCardProps) {
             <span className="text-sm text-[var(--color-foreground-muted)] font-sans ml-1">/mo</span>
           </p>
         </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Shown until there's spending to measure. States the one thing we do know
+ * (the sustainable budget, which only needs savings + salary) and asks for
+ * the input that unlocks the rest.
+ */
+function RunwayNeedsData({ runway }: { runway: RunwayInfo }) {
+  return (
+    <section className="rounded border border-[var(--color-border)] border-l-[3px] border-l-[var(--color-border-strong)] bg-[var(--color-surface-raised)] p-6">
+      <div className="mb-3 flex items-baseline justify-between">
+        <p className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-muted)]">
+          Runway
+        </p>
+        <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-subtle)]">
+          Needs data
+        </span>
+      </div>
+
+      <p className="mb-2 text-3xl font-bold text-[var(--color-foreground)]">
+        Not yet
+      </p>
+      <p className="mb-5 text-sm leading-relaxed text-[var(--color-foreground-muted)]">
+        Log a few expenses and Tally will work out how long your savings last
+        at that rate.
+      </p>
+
+      <div className="border-t border-[var(--color-border)] pt-4">
+        <p className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-muted)]">
+          Sustainable budget
+        </p>
+        <p className="font-display text-h1 mt-1 text-[var(--color-foreground)]">
+          {formatCurrency(runway.monthly_budget_limit)}
+          <span className="ml-1 font-sans text-sm text-[var(--color-foreground-muted)]">
+            /mo
+          </span>
+        </p>
+        <Link
+          href="/transactions/new"
+          className="mt-4 inline-flex rounded bg-[var(--color-brand)] px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-[var(--color-brand-light)]"
+        >
+          Log your first expense
+        </Link>
       </div>
     </section>
   );
