@@ -3,6 +3,13 @@
 import { useState } from "react";
 import { createTransaction } from "./actions";
 import { useErrorShake } from "@/lib/hooks/use-error-shake";
+import {
+  RECURRENCE_OPTIONS,
+  monthlyEquivalent,
+  recurrenceOption,
+  type Recurrence,
+} from "@/lib/utils/recurrence";
+import { formatCurrency } from "@/lib/utils/format";
 import type { Category } from "@/types";
 
 interface ExpenseFormProps {
@@ -20,6 +27,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
   const [description, setDescription] = useState("");
   const [merchant, setMerchant] = useState("");
   const [date, setDate] = useState(today);
+  const [recurrence, setRecurrence] = useState<Recurrence>("once");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { ref: shakeRef, shake } = useErrorShake<HTMLButtonElement>();
@@ -35,6 +43,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
       description: description.trim(),
       merchant: merchant.trim(),
       date,
+      recurrence,
     });
 
     if (result?.error) {
@@ -113,6 +122,44 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
             </option>
           ))}
         </select>
+      </div>
+
+      {/* How often it repeats */}
+      <div className="space-y-1.5">
+        <label
+          htmlFor="recurrence"
+          className="block text-sm font-medium text-[var(--color-foreground)]"
+        >
+          How often
+        </label>
+        <select
+          id="recurrence"
+          value={recurrence}
+          onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+          className="w-full bg-white border border-[var(--color-border-strong)] rounded px-3 py-2.5 text-[var(--color-foreground)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-subtle)] transition-all"
+        >
+          {RECURRENCE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-[var(--color-foreground-muted)]">
+          {recurrenceOption(recurrence).perMonth === 0 ? (
+            "Counted once, in the 30 days after it happened."
+          ) : Number(amount) > 0 ? (
+            <>
+              Counts as{" "}
+              <span className="font-medium text-[var(--color-foreground)] tabular-nums">
+                {formatCurrency(monthlyEquivalent(Number(amount), recurrence))}
+                /mo
+              </span>{" "}
+              toward your runway, every month.
+            </>
+          ) : (
+            "Counted toward your runway every month, not just this one."
+          )}
+        </p>
       </div>
 
       {/* Merchant */}
