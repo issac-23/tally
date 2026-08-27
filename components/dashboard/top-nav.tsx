@@ -12,39 +12,74 @@ const navItems = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
+interface NavLinkProps {
+  href: string;
+  label: string;
+  active: boolean;
+  className?: string;
+}
+
+function NavLink({ href, label, active, className = "" }: NavLinkProps) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`flex items-center whitespace-nowrap rounded px-3 py-1.5 text-sm font-medium transition-colors ${
+        active
+          ? "bg-[var(--color-brand-subtle)] text-[var(--color-brand)]"
+          : "text-[var(--color-foreground-muted)] hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)]"
+      } ${className}`}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export function TopNav() {
   const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-30 bg-[var(--color-background)]/85 backdrop-blur border-b border-[var(--color-border)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3 sm:gap-6">
-        <Link href="/dashboard" className="shrink-0">
-          <Logo size="md" withWordmark />
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        {/* Row 1: identity + account. On sm+ the nav joins this row. */}
+        <div className="h-14 flex items-center justify-between gap-3 sm:gap-6">
+          <Link href="/dashboard" className="shrink-0">
+            <Logo size="md" withWordmark />
+          </Link>
 
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-none sm:gap-2">
-          {navItems.map((item) => {
-            const active = isActiveRoute(pathname, item.href);
-            return (
-              <Link
+          <nav aria-label="Main" className="hidden sm:flex items-center gap-2">
+            {navItems.map((item) => (
+              <NavLink
                 key={item.href}
                 href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={`whitespace-nowrap px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-[var(--color-brand-subtle)] text-[var(--color-brand)]"
-                    : "text-[var(--color-foreground-muted)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)]"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+                label={item.label}
+                active={isActiveRoute(pathname, item.href)}
+              />
+            ))}
+          </nav>
 
-        <div className="shrink-0">
-          <SignOutButton />
+          <div className="shrink-0">
+            <SignOutButton />
+          </div>
         </div>
+
+        {/* Row 2 (mobile only): the three destinations share the width evenly
+            so none of them can be clipped off-screen the way a single
+            scrolling row clipped "Settings" at 390px. */}
+        <nav
+          aria-label="Main"
+          className="grid grid-cols-3 gap-1 pb-2 sm:hidden"
+        >
+          {navItems.map((item) => (
+            <NavLink
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              active={isActiveRoute(pathname, item.href)}
+              className="justify-center"
+            />
+          ))}
+        </nav>
       </div>
     </header>
   );
