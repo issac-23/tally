@@ -50,7 +50,7 @@ export default async function TransactionsPage() {
             <ExportTransactionsButton transactions={transactions} />
             <Link
               href="/transactions/new"
-              className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm sm:w-auto"
+              className="btn-primary w-full px-4 py-2 text-sm sm:w-auto"
             >
               + Add expense
             </Link>
@@ -109,7 +109,7 @@ function EmptyState() {
       </p>
       <Link
         href="/transactions/new"
-        className="inline-block mt-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm"
+        className="btn-primary mt-2 px-4 py-2 text-sm"
       >
         Add your first expense
       </Link>
