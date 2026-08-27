@@ -22,15 +22,15 @@ function tx(overrides: Partial<TransactionRowData> = {}): TransactionRowData {
 describe("transactionsToCsv", () => {
   it("includes a header row", () => {
     expect(transactionsToCsv([])).toBe(
-      "date,amount,category,merchant,description"
+      "date,amount,category,merchant,description,recurrence"
     );
   });
 
   it("exports transaction fields in stable column order", () => {
     expect(transactionsToCsv([tx()])).toBe(
       [
-        "date,amount,category,merchant,description",
-        "2026-05-24,12.50,Food,Tatte Bakery,Coffee",
+        "date,amount,category,merchant,description,recurrence",
+        "2026-05-24,12.50,Food,Tatte Bakery,Coffee,once",
       ].join("\n")
     );
   });
@@ -54,8 +54,8 @@ describe("transactionsToCsv", () => {
       ])
     ).toBe(
       [
-        "date,amount,category,merchant,description",
-        "2026-05-24,12.50,,,",
+        "date,amount,category,merchant,description,recurrence",
+        "2026-05-24,12.50,,,,once",
       ].join("\n")
     );
   });

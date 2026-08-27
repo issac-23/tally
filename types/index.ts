@@ -1,3 +1,7 @@
+import type { Recurrence } from "@/lib/utils/recurrence";
+
+export type { Recurrence };
+
 export type RunwayStatus = "green" | "yellow" | "orange" | "red";
 
 export interface Profile {
@@ -27,6 +31,7 @@ export interface Transaction {
   category_id: string;
   merchant: string;
   date: string; // ISO date string
+  recurrence: Recurrence;
   created_at: string;
   category?: Category;
 }
