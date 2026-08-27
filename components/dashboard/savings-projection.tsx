@@ -25,7 +25,7 @@ export function SavingsProjectionSection({
         {hasSpendingData ? (
           <Caption projection={projection} />
         ) : (
-          <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-subtle)]">
+          <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-foreground-muted)]">
             Needs spending data
           </span>
         )}

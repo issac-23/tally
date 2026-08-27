@@ -115,7 +115,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
       {/* Merchant */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-[var(--color-foreground)]">
-          Merchant <span className="text-[var(--color-foreground-subtle)] font-normal">(optional)</span>
+          Merchant <span className="text-[var(--color-foreground-muted)] font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -129,7 +129,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
       {/* Description */}
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-[var(--color-foreground)]">
-          Note <span className="text-[var(--color-foreground-subtle)] font-normal">(optional)</span>
+          Note <span className="text-[var(--color-foreground-muted)] font-normal">(optional)</span>
         </label>
         <input
           type="text"
@@ -143,7 +143,7 @@ export function ExpenseForm({ categories }: ExpenseFormProps) {
       <button
         type="submit"
         disabled={submitting || !amount || !categoryId}
-        className="w-full bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="btn-primary w-full px-4 py-3"
       >
         {submitting ? "Saving..." : "Add expense"}
       </button>

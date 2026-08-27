@@ -95,7 +95,7 @@ export function CategoryForm({ categories }: CategoryFormProps) {
         <button
           type="submit"
           disabled={submitting || name.trim().length < 2}
-          className="rounded bg-[var(--color-brand)] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[var(--color-brand-light)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="btn-primary px-4 py-2.5 text-sm"
         >
           {submitting ? "Adding..." : "Add category"}
         </button>
@@ -135,7 +135,7 @@ function CategoryList({ categories }: { categories: CustomCategory[] }) {
               <CategoryRow key={c.id} category={c} />
             ))}
           </ul>
-          <p className="mt-3 text-xs text-[var(--color-foreground-subtle)]">
+          <p className="mt-3 text-xs text-[var(--color-foreground-muted)]">
             Removing a category keeps its expenses — they move to
             Uncategorized.
           </p>

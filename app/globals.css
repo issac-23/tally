@@ -9,7 +9,10 @@
   /* ---------- Content (text) ---------- */
   --color-foreground: #1A1A1A;
   --color-foreground-muted: #6B7280;
-  --color-foreground-subtle: #9CA3AF;
+  /* Decoration only — empty-state icons, rules, idle affordances. At 3.2:1 on
+     the page background it clears the non-text threshold but not the 4.5:1
+     body-text one, so text uses foreground-muted instead. */
+  --color-foreground-subtle: #8A9099;
 
   /* ---------- Borders ---------- */
   --color-border: #E5E7EB;
@@ -64,6 +67,34 @@ body {
 :where(a, button, input, select, textarea):focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-brand-subtle);
+  color: var(--color-foreground);
+}
+
+/* The primary action, defined once. Four screens had hand-rolled copies of
+   the same classes, and each of them used opacity-50 for disabled — a solid
+   orange button at half opacity still reads as pressable. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.25rem;
+  background-color: var(--color-brand);
+  color: #ffffff;
+  font-weight: 500;
+  transition: background-color 150ms ease;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-brand-light);
+}
+.btn-primary:disabled {
+  background-color: var(--color-surface);
+  color: var(--color-foreground-subtle);
+  cursor: not-allowed;
 }
 
 /* Currency fields are type=number for the mobile numeric keypad, but the

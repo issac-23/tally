@@ -64,7 +64,7 @@ export function SettingsForm({
         <button
           type="submit"
           disabled={submitting || !isDirty || savings === "" || salary === ""}
-          className="bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          className="btn-primary px-4 py-2.5 text-sm"
         >
           {submitting ? "Saving..." : "Save changes"}
         </button>

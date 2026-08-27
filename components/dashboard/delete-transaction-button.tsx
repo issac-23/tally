@@ -55,7 +55,7 @@ export function DeleteTransactionButton({ id }: DeleteTransactionButtonProps) {
       type="button"
       onClick={handleClick}
       aria-label="Delete transaction"
-      className="shrink-0 p-2 -mr-2 rounded text-[var(--color-foreground-subtle)] hover:text-[var(--color-status-red)] hover:bg-[var(--color-status-red-bg)] transition-colors"
+      className="shrink-0 p-2 -mr-2 rounded text-[var(--color-foreground-muted)] hover:text-[var(--color-status-red)] hover:bg-[var(--color-status-red-bg)] transition-colors"
     >
       <TrashIcon />
     </button>
