@@ -39,7 +39,7 @@ export default async function Home() {
         </div>
 
         {/* Footer */}
-        <p className="text-xs text-[var(--color-foreground-subtle)]">
+        <p className="text-xs text-[var(--color-foreground-muted)]">
           Open source · Private data per user · Built with Next.js + Supabase
         </p>
       </div>

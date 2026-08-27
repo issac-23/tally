@@ -8,6 +8,7 @@ import {
 } from "@/components/dashboard/transaction-row";
 import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
 import { formatCurrency } from "@/lib/utils/format";
+import { groupByMonth } from "@/lib/utils/aggregation";
 
 export default async function TransactionsPage() {
   const supabase = await createClient();
@@ -49,27 +50,41 @@ export default async function TransactionsPage() {
             <ExportTransactionsButton transactions={transactions} />
             <Link
               href="/transactions/new"
-              className="inline-flex w-full items-center justify-center gap-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm sm:w-auto"
+              className="btn-primary w-full px-4 py-2 text-sm sm:w-auto"
             >
               + Add expense
             </Link>
           </div>
         </div>
 
-        {/* List */}
+        {/* List, bucketed by month so a long history stays scannable */}
         {transactions.length > 0 ? (
-          <ul className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded overflow-hidden">
-            {transactions.map((t, i) => (
-              <li
-                key={t.id}
-                className={
-                  i > 0 ? "border-t border-[var(--color-border)]" : ""
-                }
-              >
-                <TransactionRow transaction={t} />
-              </li>
+          <div className="space-y-6">
+            {groupByMonth(transactions).map((group) => (
+              <section key={group.key} className="space-y-2">
+                <div className="flex items-baseline justify-between gap-3 px-1">
+                  <h2 className="text-sm font-semibold text-[var(--color-foreground)]">
+                    {group.label}
+                  </h2>
+                  <p className="text-sm tabular-nums text-[var(--color-foreground-muted)]">
+                    {formatCurrency(group.total)}
+                  </p>
+                </div>
+                <ul className="overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                  {group.transactions.map((t, i) => (
+                    <li
+                      key={t.id}
+                      className={
+                        i > 0 ? "border-t border-[var(--color-border)]" : ""
+                      }
+                    >
+                      <TransactionRow transaction={t} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         ) : (
           <EmptyState />
         )}
@@ -94,7 +109,7 @@ function EmptyState() {
       </p>
       <Link
         href="/transactions/new"
-        className="inline-block mt-2 bg-[var(--color-brand)] hover:bg-[var(--color-brand-light)] text-white font-medium rounded px-4 py-2 transition-colors text-sm"
+        className="btn-primary mt-2 px-4 py-2 text-sm"
       >
         Add your first expense
       </Link>

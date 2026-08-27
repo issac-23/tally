@@ -34,7 +34,7 @@ describe("runwayStatus", () => {
 
 describe("runwayLabel", () => {
   it("shows 'Indefinite' for infinite runway", () => {
-    expect(runwayLabel(Infinity)).toBe("Indefinite, you're saving");
+    expect(runwayLabel(Infinity)).toBe("Indefinite");
   });
 
   it("formats sub-month runway in days", () => {
@@ -84,7 +84,7 @@ describe("calculateRunway", () => {
     const r = calculateRunway(10000, 3000, 1000);
     expect(r.months_remaining).toBe(Infinity);
     expect(r.status).toBe("green");
-    expect(r.label).toBe("Indefinite, you're saving");
+    expect(r.label).toBe("Indefinite");
   });
 
   it("reports infinite runway at breakeven (salary == spend)", () => {
