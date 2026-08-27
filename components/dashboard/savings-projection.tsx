@@ -35,8 +35,7 @@ export function SavingsProjectionSection({
         {hasSpendingData ? (
           <>
             Based on {formatCurrency(monthlySalary)}/mo income and{" "}
-            {formatCurrency(monthlyAvgSpend)}/mo average spending. Dotted
-            because the future is a guess.
+            {formatCurrency(monthlyAvgSpend)}/mo average spending.
           </>
         ) : (
           <>

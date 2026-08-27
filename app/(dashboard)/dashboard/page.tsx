@@ -111,13 +111,10 @@ export default async function DashboardPage() {
 
         {/* Welcome + primary action */}
         <section className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-end">
-          <div className="space-y-2">
+          <div>
             <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Welcome, {displayName}.
             </h1>
-            <p className="text-[var(--color-foreground-muted)]">
-              Here&apos;s the lay of the land.
-            </p>
           </div>
           <Link
             href="/transactions/new"
