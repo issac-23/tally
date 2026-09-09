@@ -152,6 +152,7 @@ export default async function DashboardPage() {
           <div className="lg:col-span-2">
             <SavingsProjectionSection
               projection={projection}
+              savings={savings}
               monthlySalary={salary}
               monthlyAvgSpend={burnRate}
               hasSpendingData={hasSpendingData}
