@@ -326,6 +326,50 @@ input[type="number"]::-webkit-inner-spin-button {
   .t-success-check svg path { animation: none !important; stroke-dashoffset: 0 !important; }
 }
 
+/* Range input. Every value here is a standard one — `appearance: none` and
+   nothing else — because the build silently drops rules whose only
+   declarations use non-standard values (see the number-spinner note above). */
+input[type="range"] {
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  border: 2px solid var(--color-surface-raised);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+input[type="range"]:active::-webkit-slider-thumb {
+  background: var(--color-brand-light);
+}
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-brand);
+  border: 2px solid var(--color-surface-raised);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+}
+
 /* Display headings use Playfair via the .font-display class.
    Tighter line-height since serif display fonts run tall. */
 .font-display {
