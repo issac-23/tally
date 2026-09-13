@@ -1,4 +1,5 @@
-import { Repeat } from "lucide-react";
+import Link from "next/link";
+import { Pencil, Repeat } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/format";
 import { recurrenceBadge } from "@/lib/utils/recurrence";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -78,7 +79,15 @@ export function TransactionRow({ transaction: t }: TransactionRowProps) {
         </p>
       </div>
 
-      <div className="shrink-0">
+      <div className="flex shrink-0 items-center">
+        <Link
+          href={`/transactions/${t.id}/edit`}
+          aria-label={`Edit ${primary === "—" ? "expense" : primary}`}
+          title="Edit"
+          className="rounded p-2 text-[var(--color-foreground-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-[var(--color-foreground)]"
+        >
+          <Pencil size={16} aria-hidden />
+        </Link>
         <DeleteTransactionButton id={t.id} />
       </div>
     </div>
