@@ -4,6 +4,26 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // Local development fixtures — see lib/dev/fixtures.ts. Same literal
+  // NODE_ENV guard as lib/supabase/server.ts, so this is dead code in a
+  // production build. There is no fixture session to refresh, so the only
+  // thing to reproduce is the route guard.
+  if (
+    process.env.NODE_ENV !== "production" &&
+    process.env.TALLY_DEV_FIXTURES === "1"
+  ) {
+    const scenario = request.cookies.get("tally_fx")?.value ?? "full";
+    if (
+      scenario.startsWith("signedout") &&
+      request.nextUrl.pathname.startsWith("/dashboard")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "verify:no-fixtures": "node scripts/assert-no-fixtures.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
