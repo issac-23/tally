@@ -21,7 +21,16 @@ const SENTINEL = "TALLY_DEV_FIXTURES_ACTIVE_SENTINEL";
 
 // Next writes its own type/manifest files that legitimately reference source
 // paths without bundling them. Only real output chunks matter here.
-const SKIP_DIRS = new Set(["cache", "types"]);
+//
+// `.next/dev` holds the dev server's own chunks, where the fixtures are
+// *supposed* to appear. It shares a build directory with the production
+// output, so anyone who has run `npm run dev` would otherwise fail this
+// check on chunks the production server never loads.
+const SKIP_DIRS = new Set([
+  path.join(BUILD_DIR, "cache"),
+  path.join(BUILD_DIR, "types"),
+  path.join(BUILD_DIR, "dev"),
+]);
 const CODE_EXTENSIONS = new Set([".js", ".mjs", ".cjs"]);
 
 async function collectFiles(dir) {
@@ -36,7 +45,7 @@ async function collectFiles(dir) {
   for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
+      if (SKIP_DIRS.has(full)) continue;
       found.push(...(await collectFiles(full)));
     } else if (CODE_EXTENSIONS.has(path.extname(entry.name))) {
       found.push(full);

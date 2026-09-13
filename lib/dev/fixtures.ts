@@ -568,6 +568,18 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
       return { data: null, error: null };
     }
 
+    if (this.mode === "update") {
+      const payload = this.payload as Row;
+      const touched = this.store.transactions.filter((t) =>
+        this.matches(t as unknown as Row)
+      );
+      for (const row of touched) Object.assign(row, payload);
+      // Postgres returns the affected rows when the caller chains .select(),
+      // and updateTransaction relies on an empty array to tell "you don't own
+      // this row" apart from a successful write.
+      return { data: touched.map((t) => ({ ...t })), error: null };
+    }
+
     if (this.mode === "delete") {
       const before = this.store.transactions.length;
       this.store.transactions = this.store.transactions.filter(

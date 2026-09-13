@@ -84,6 +84,43 @@ describe("createFixtureClient", () => {
     expect((data as unknown[]).length).toBe(0);
   });
 
+  it("updates a transaction and returns the affected rows", async () => {
+    const supabase = createFixtureClient({ scenario: "empty" });
+    await supabase.from("transactions").insert({
+      amount: 10,
+      date: "2026-08-01",
+      category_id: "cat-food",
+      recurrence: "once",
+    });
+
+    const { data: before } = await supabase.from("transactions").select("id, amount");
+    const id = (before as Array<{ id: string }>)[0].id;
+
+    const { data: touched, error } = await supabase
+      .from("transactions")
+      .update({ amount: 42, recurrence: "monthly" })
+      .eq("id", id)
+      .select("id");
+    expect(error).toBeNull();
+    expect((touched as unknown[]).length).toBe(1);
+
+    const { data: after } = await supabase.from("transactions").select("id, amount, recurrence");
+    expect((after as Array<{ amount: number; recurrence: string }>)[0]).toMatchObject({
+      amount: 42,
+      recurrence: "monthly",
+    });
+  });
+
+  it("reports no affected rows when the update matches nothing", async () => {
+    const supabase = createFixtureClient({ scenario: "empty" });
+    const { data } = await supabase
+      .from("transactions")
+      .update({ amount: 1 })
+      .eq("id", "does-not-exist")
+      .select("id");
+    expect((data as unknown[]).length).toBe(0);
+  });
+
   it("reproduces the duplicate-category constraint", async () => {
     const supabase = createFixtureClient({ scenario: "empty" });
     const insert = () =>
