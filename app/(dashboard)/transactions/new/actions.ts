@@ -3,16 +3,12 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isRecurrence } from "@/lib/utils/recurrence";
+import {
+  validateTransactionInput,
+  type TransactionInput,
+} from "@/lib/utils/transaction-input";
 
-export interface CreateTransactionInput {
-  amount: number;
-  category_id: string;
-  description?: string;
-  merchant?: string;
-  date: string; // YYYY-MM-DD
-  recurrence?: string;
-}
+export type CreateTransactionInput = TransactionInput;
 
 export interface CreateTransactionResult {
   error?: string;
@@ -21,20 +17,9 @@ export interface CreateTransactionResult {
 export async function createTransaction(
   input: CreateTransactionInput
 ): Promise<CreateTransactionResult> {
-  if (!Number.isFinite(input.amount) || input.amount <= 0) {
-    return { error: "Amount must be greater than zero." };
-  }
-  if (!input.category_id) {
-    return { error: "Pick a category." };
-  }
-  if (!input.date) {
-    return { error: "Pick a date." };
-  }
-  // Guard here as well as in the CHECK constraint, so a bad value comes back
-  // as a readable message instead of a Postgres constraint error.
-  const recurrence = input.recurrence ?? "once";
-  if (!isRecurrence(recurrence)) {
-    return { error: "Pick how often this repeats." };
+  const validated = validateTransactionInput(input);
+  if (!validated.ok) {
+    return { error: validated.error };
   }
 
   const supabase = await createClient();
@@ -48,12 +33,7 @@ export async function createTransaction(
 
   const { error } = await supabase.from("transactions").insert({
     user_id: user.id,
-    amount: input.amount,
-    category_id: input.category_id,
-    description: input.description || null,
-    merchant: input.merchant || null,
-    date: input.date,
-    recurrence,
+    ...validated.fields,
   });
 
   if (error) {
