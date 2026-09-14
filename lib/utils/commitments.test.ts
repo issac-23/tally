@@ -76,6 +76,22 @@ describe("commitmentBreakdown", () => {
     expect(summary.commitments.map((c) => c.label)).toEqual(["Gym", "Geico"]);
   });
 
+  it("falls back from merchant to note to category for the label", () => {
+    const summary = commitmentBreakdown(
+      [
+        row({ merchant: "  ", description: "Storage unit", category: null }),
+        row({ merchant: null, description: null, recurrence: "yearly" }),
+        row({ merchant: null, description: null, category: null, recurrence: "weekly" }),
+      ],
+      4200
+    );
+    expect(summary.commitments.map((c) => c.label).sort()).toEqual([
+      "Housing",
+      "Recurring expense",
+      "Storage unit",
+    ]);
+  });
+
   it("reports what's left of the income and the share it eats", () => {
     const summary = commitmentBreakdown([row({ amount: 2100 })], 4200);
     expect(summary.remaining).toBeCloseTo(2100, 6);
