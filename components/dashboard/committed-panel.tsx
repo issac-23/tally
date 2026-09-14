@@ -8,7 +8,7 @@ interface CommittedPanelProps {
 }
 
 export function CommittedPanel({ summary }: CommittedPanelProps) {
-  const { commitments, total } = summary;
+  const { commitments, total, remaining, shareOfIncome } = summary;
 
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
@@ -33,6 +33,30 @@ export function CommittedPanel({ summary }: CommittedPanelProps) {
               {formatCurrency(total)}
             </p>
           </div>
+
+          {shareOfIncome !== null && (
+            <div className="space-y-2">
+              <div
+                className="h-1.5 overflow-hidden rounded-full bg-[var(--color-surface)]"
+                role="img"
+                aria-label={`Commitments take ${Math.round(
+                  shareOfIncome * 100
+                )}% of your monthly income`}
+              >
+                <div
+                  className="h-full rounded-full bg-[var(--color-brand)] transition-[width] duration-500"
+                  style={{ width: `${Math.max(2, shareOfIncome * 100)}%` }}
+                />
+              </div>
+              <p className="text-sm text-[var(--color-foreground-muted)]">
+                Leaves{" "}
+                <span className="font-medium tabular-nums text-[var(--color-foreground)]">
+                  {formatCurrency(remaining ?? 0)}/mo
+                </span>{" "}
+                for everything else.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* What makes it up */}
