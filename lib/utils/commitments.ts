@@ -49,23 +49,26 @@ export interface CommitmentSummary {
 export function commitmentBreakdown(rows: RecurringRow[]): CommitmentSummary {
   // recurringSeries collapses twelve months of logged rent into the one
   // commitment it actually represents, newest row winning.
-  const commitments = recurringSeries(rows).map((row) => {
-    const recurrence = (row.recurrence ?? "once") as Recurrence;
-    return {
-      key: [
+  const commitments = recurringSeries(rows)
+    .map((row) => {
+      const recurrence = (row.recurrence ?? "once") as Recurrence;
+      return {
+        key: [
+          recurrence,
+          row.category?.id ?? row.category_id ?? "",
+          (row.merchant ?? "").trim().toLowerCase(),
+        ].join("|"),
+        label: (row.merchant ?? "").trim() || row.category?.name || "Recurring expense",
+        amount: Number(row.amount),
         recurrence,
-        row.category?.id ?? row.category_id ?? "",
-        (row.merchant ?? "").trim().toLowerCase(),
-      ].join("|"),
-      label: (row.merchant ?? "").trim() || row.category?.name || "Recurring expense",
-      amount: Number(row.amount),
-      recurrence,
-      badge: recurrenceBadge(recurrence),
-      monthly: monthlyEquivalent(row.amount, recurrence),
-      category: row.category ?? null,
-      date: row.date,
-    };
-  });
+        badge: recurrenceBadge(recurrence),
+        monthly: monthlyEquivalent(row.amount, recurrence),
+        category: row.category ?? null,
+        date: row.date,
+      };
+    })
+    // Biggest commitment first: the list is read to find what to cut.
+    .sort((a, b) => b.monthly - a.monthly);
 
   return {
     commitments,
