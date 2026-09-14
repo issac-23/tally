@@ -18,6 +18,7 @@ interface RecurringRow {
   amount: number | string;
   date: string; // YYYY-MM-DD
   merchant?: string | null;
+  description?: string | null;
   recurrence?: string | null;
   category_id?: string | null;
   category?: { id: string; name: string; icon: string; color: string } | null;
@@ -68,7 +69,7 @@ export function commitmentBreakdown(
           row.category?.id ?? row.category_id ?? "",
           (row.merchant ?? "").trim().toLowerCase(),
         ].join("|"),
-        label: (row.merchant ?? "").trim() || row.category?.name || "Recurring expense",
+        label: labelFor(row),
         amount: Number(row.amount),
         recurrence,
         badge: recurrenceBadge(recurrence),
@@ -90,4 +91,14 @@ export function commitmentBreakdown(
     remaining: known ? salary - total : null,
     shareOfIncome: known ? total / salary : null,
   };
+}
+
+function labelFor(row: RecurringRow): string {
+  const merchant = (row.merchant ?? "").trim();
+  if (merchant) return merchant;
+  const description = (row.description ?? "").trim();
+  if (description) return description;
+  // Falling back to the category keeps the row identifiable — "Housing" is
+  // still useful, "—" is not.
+  return row.category?.name ?? "Recurring expense";
 }
