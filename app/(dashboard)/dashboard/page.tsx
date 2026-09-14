@@ -62,13 +62,24 @@ export default async function DashboardPage() {
   // logged eight months ago is still owed.
   const { data: recurringData } = await supabase
     .from("transactions")
-    .select("amount, date, merchant, recurrence, category_id")
+    .select(
+      "amount, date, merchant, description, recurrence, category:categories(id, name, icon, color)"
+    )
     .neq("recurrence", "once")
     .order("date", { ascending: false })
     .order("created_at", { ascending: false });
 
   const txs = recentTransactions ?? [];
-  const recurring = recurringData ?? [];
+  // Supabase types the joined `category` as an array, but with a single FK
+  // it's always one row, so narrow it the same way the row list does.
+  const recurring = (recurringData ?? []) as unknown as Array<{
+    amount: number | string;
+    date: string;
+    merchant: string | null;
+    description: string | null;
+    recurrence: string | null;
+    category: { id: string; name: string; icon: string; color: string } | null;
+  }>;
   // No spending in the window means no burn rate, which means the runway and
   // projection have nothing real to say yet. Both cards switch to a
   // needs-data state rather than reporting "infinite runway" as good news.
