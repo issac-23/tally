@@ -5,6 +5,9 @@
  * but the number it produces is a single blended figure. "You're spending
  * $3,255/mo" doesn't tell you that $2,140 of it is rent, insurance and four
  * subscriptions you can't cancel by being careful at the supermarket.
+ *
+ * This splits that out: the committed floor, what's left over, and which
+ * commitments make up the difference.
  */
 
 import {
