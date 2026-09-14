@@ -44,9 +44,19 @@ export interface CommitmentSummary {
   commitments: Commitment[];
   /** Monthly cost of every commitment combined. */
   total: number;
+  /**
+   * Income left after the commitments, or null when we don't know the
+   * income. Can go negative, which is worth seeing.
+   */
+  remaining: number | null;
+  /** 0–1 share of income the commitments eat, or null when income is 0. */
+  shareOfIncome: number | null;
 }
 
-export function commitmentBreakdown(rows: RecurringRow[]): CommitmentSummary {
+export function commitmentBreakdown(
+  rows: RecurringRow[],
+  monthlySalary: number
+): CommitmentSummary {
   // recurringSeries collapses twelve months of logged rent into the one
   // commitment it actually represents, newest row winning.
   const commitments = recurringSeries(rows)
@@ -70,8 +80,14 @@ export function commitmentBreakdown(rows: RecurringRow[]): CommitmentSummary {
     // Biggest commitment first: the list is read to find what to cut.
     .sort((a, b) => b.monthly - a.monthly);
 
+  const total = commitments.reduce((sum, c) => sum + c.monthly, 0);
+  const salary = Number(monthlySalary);
+  const known = Number.isFinite(salary) && salary > 0;
+
   return {
     commitments,
-    total: commitments.reduce((sum, c) => sum + c.monthly, 0),
+    total,
+    remaining: known ? salary - total : null,
+    shareOfIncome: known ? total / salary : null,
   };
 }
