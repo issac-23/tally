@@ -48,6 +48,7 @@ export type Scenario =
   | "new"
   | "critical"
   | "recurring"
+  | "overcommitted"
   | "long"
   | "error"
   | "signedout";
@@ -58,6 +59,7 @@ export const SCENARIOS: readonly Scenario[] = [
   "new", // not onboarded — lands on /onboarding
   "critical", // days of runway left
   "recurring", // exercises the standing-commitment maths
+  "overcommitted", // standing commitments cost more than the income
   "long", // long names and large amounts, for layout
   "error", // every write fails
   "signedout", // no session — lands on the landing page
@@ -231,6 +233,24 @@ function buildStore(scenario: Scenario): Store {
       rows.push(...oneOffHistory(11));
       return {
         profile: { id: USER_ID, savings_balance: 18400, monthly_salary: 4200, onboarded: true },
+        categories,
+        transactions: rows,
+      };
+    }
+
+    // Commitments alone outrun the income, so nothing is left before the
+    // first coffee. The only scenario where "what's left over" goes negative.
+    case "overcommitted": {
+      const rows: TransactionRow[] = [
+        makeTransaction(6, 2050, "Greystar Rent", "cat-housing", "monthly", "Rent"),
+        makeTransaction(3, 62, "MBTA", "cat-transport", "weekly", "Commuter pass"),
+        makeTransaction(150, 1200, "Geico", "cat-utilities", "yearly", "Car insurance"),
+        makeTransaction(4, 89, "Blue Cross", "cat-health", "monthly", "Health plan"),
+        makeTransaction(2, 15.99, "Netflix", "cat-fun", "monthly"),
+        ...oneOffHistory(6),
+      ];
+      return {
+        profile: { id: USER_ID, savings_balance: 5200, monthly_salary: 2200, onboarded: true },
         categories,
         transactions: rows,
       };
