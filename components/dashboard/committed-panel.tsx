@@ -10,6 +10,11 @@ interface CommittedPanelProps {
 export function CommittedPanel({ summary }: CommittedPanelProps) {
   const { commitments, total, remaining, shareOfIncome } = summary;
 
+  // A share over 1 means the commitments alone outrun the income. Clamping
+  // the bar keeps the layout intact; the copy underneath says what happened.
+  const share = shareOfIncome === null ? null : Math.min(shareOfIncome, 1);
+  const overCommitted = remaining !== null && remaining < 0;
+
   return (
     <section className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 sm:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
@@ -34,26 +39,43 @@ export function CommittedPanel({ summary }: CommittedPanelProps) {
             </p>
           </div>
 
-          {shareOfIncome !== null && (
+          {share !== null && (
             <div className="space-y-2">
               <div
                 className="h-1.5 overflow-hidden rounded-full bg-[var(--color-surface)]"
                 role="img"
                 aria-label={`Commitments take ${Math.round(
-                  shareOfIncome * 100
+                  (shareOfIncome ?? 0) * 100
                 )}% of your monthly income`}
               >
                 <div
-                  className="h-full rounded-full bg-[var(--color-brand)] transition-[width] duration-500"
-                  style={{ width: `${Math.max(2, shareOfIncome * 100)}%` }}
+                  className="h-full rounded-full transition-[width] duration-500"
+                  style={{
+                    width: `${Math.max(2, share * 100)}%`,
+                    backgroundColor: overCommitted
+                      ? "var(--color-status-red)"
+                      : "var(--color-brand)",
+                  }}
                 />
               </div>
               <p className="text-sm text-[var(--color-foreground-muted)]">
-                Leaves{" "}
-                <span className="font-medium tabular-nums text-[var(--color-foreground)]">
-                  {formatCurrency(remaining ?? 0)}/mo
-                </span>{" "}
-                for everything else.
+                {overCommitted ? (
+                  <>
+                    That&rsquo;s{" "}
+                    <span className="font-medium text-[var(--color-status-red)] tabular-nums">
+                      {formatCurrency(Math.abs(remaining ?? 0))}/mo
+                    </span>{" "}
+                    more than you bring in, before anything else.
+                  </>
+                ) : (
+                  <>
+                    Leaves{" "}
+                    <span className="font-medium tabular-nums text-[var(--color-foreground)]">
+                      {formatCurrency(remaining ?? 0)}/mo
+                    </span>{" "}
+                    for everything else.
+                  </>
+                )}
               </p>
             </div>
           )}
