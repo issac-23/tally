@@ -17,16 +17,21 @@ function row(overrides: Record<string, unknown> = {}) {
 
 describe("commitmentBreakdown", () => {
   it("returns an empty, zeroed summary for no commitments", () => {
-    const summary = commitmentBreakdown([]);
+    const summary = commitmentBreakdown([], 4200);
     expect(summary.commitments).toEqual([]);
     expect(summary.total).toBe(0);
+    expect(summary.remaining).toBe(4200);
+    expect(summary.shareOfIncome).toBe(0);
   });
 
   it("converts each cadence to a monthly cost", () => {
-    const summary = commitmentBreakdown([
-      row({ amount: 1200, recurrence: "yearly", merchant: "Geico", category: null }),
-      row({ amount: 15.99, recurrence: "monthly", merchant: "Netflix", category: FUN }),
-    ]);
+    const summary = commitmentBreakdown(
+      [
+        row({ amount: 1200, recurrence: "yearly", merchant: "Geico", category: null }),
+        row({ amount: 15.99, recurrence: "monthly", merchant: "Netflix", category: FUN }),
+      ],
+      0
+    );
     const byLabel = Object.fromEntries(summary.commitments.map((c) => [c.label, c.monthly]));
     expect(byLabel["Geico"]).toBeCloseTo(100, 6);
     expect(byLabel["Netflix"]).toBeCloseTo(15.99, 6);
@@ -38,39 +43,62 @@ describe("commitmentBreakdown", () => {
     const months = ["01", "02", "03", "04", "05"].map((m) =>
       row({ date: `2026-${m}-01` })
     );
-    const summary = commitmentBreakdown(months);
+    const summary = commitmentBreakdown(months, 4200);
     expect(summary.commitments).toHaveLength(1);
     expect(summary.total).toBeCloseTo(1850, 6);
   });
 
   it("takes the newest amount when a commitment changes price", () => {
-    const summary = commitmentBreakdown([
-      row({ amount: 1950, date: "2026-09-01" }),
-      row({ amount: 1850, date: "2026-08-01" }),
-    ]);
+    const summary = commitmentBreakdown(
+      [row({ amount: 1950, date: "2026-09-01" }), row({ amount: 1850, date: "2026-08-01" })],
+      4200
+    );
     expect(summary.commitments[0].amount).toBe(1950);
   });
 
   it("ignores one-off expenses", () => {
-    const summary = commitmentBreakdown([
-      row({ recurrence: "once", merchant: "Uniqlo", category: null }),
-      row(),
-    ]);
+    const summary = commitmentBreakdown(
+      [row({ recurrence: "once", merchant: "Uniqlo", category: null }), row()],
+      4200
+    );
     expect(summary.commitments.map((c) => c.label)).toEqual(["Greystar"]);
   });
 
   it("sorts by monthly cost, not by the logged amount", () => {
     // $1,200/yr looks bigger than $200/mo until you normalise it.
-    const summary = commitmentBreakdown([
-      row({ amount: 1200, recurrence: "yearly", merchant: "Geico", category: null }),
-      row({ amount: 200, recurrence: "monthly", merchant: "Gym", category: FUN }),
-    ]);
+    const summary = commitmentBreakdown(
+      [
+        row({ amount: 1200, recurrence: "yearly", merchant: "Geico", category: null }),
+        row({ amount: 200, recurrence: "monthly", merchant: "Gym", category: FUN }),
+      ],
+      4200
+    );
     expect(summary.commitments.map((c) => c.label)).toEqual(["Gym", "Geico"]);
   });
 
+  it("reports what's left of the income and the share it eats", () => {
+    const summary = commitmentBreakdown([row({ amount: 2100 })], 4200);
+    expect(summary.remaining).toBeCloseTo(2100, 6);
+    expect(summary.shareOfIncome).toBeCloseTo(0.5, 6);
+  });
+
+  it("lets the remainder go negative rather than clamping it", () => {
+    const summary = commitmentBreakdown([row({ amount: 5000 })], 4200);
+    expect(summary.remaining).toBeCloseTo(-800, 6);
+    expect(summary.shareOfIncome).toBeGreaterThan(1);
+  });
+
+  it("reports nothing about income when there isn't one", () => {
+    for (const salary of [0, -1, Number.NaN]) {
+      const summary = commitmentBreakdown([row()], salary);
+      expect(summary.remaining).toBeNull();
+      expect(summary.shareOfIncome).toBeNull();
+    }
+  });
+
   it("keeps a stable key per commitment", () => {
-    const first = commitmentBreakdown([row()]).commitments[0].key;
-    const second = commitmentBreakdown([row({ amount: 1950 })]).commitments[0].key;
+    const first = commitmentBreakdown([row()], 4200).commitments[0].key;
+    const second = commitmentBreakdown([row({ amount: 1950 })], 4200).commitments[0].key;
     // Keyed on identity, not price, so a rent rise isn't a new commitment.
     expect(first).toBe(second);
   });
