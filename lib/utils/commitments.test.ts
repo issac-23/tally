@@ -59,6 +59,15 @@ describe("commitmentBreakdown", () => {
     expect(summary.commitments.map((c) => c.label)).toEqual(["Greystar"]);
   });
 
+  it("sorts by monthly cost, not by the logged amount", () => {
+    // $1,200/yr looks bigger than $200/mo until you normalise it.
+    const summary = commitmentBreakdown([
+      row({ amount: 1200, recurrence: "yearly", merchant: "Geico", category: null }),
+      row({ amount: 200, recurrence: "monthly", merchant: "Gym", category: FUN }),
+    ]);
+    expect(summary.commitments.map((c) => c.label)).toEqual(["Gym", "Geico"]);
+  });
+
   it("keeps a stable key per commitment", () => {
     const first = commitmentBreakdown([row()]).commitments[0].key;
     const second = commitmentBreakdown([row({ amount: 1950 })]).commitments[0].key;
