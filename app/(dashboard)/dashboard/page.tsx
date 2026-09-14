@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { RunwayCard } from "@/components/dashboard/runway-card";
 import { SavingsProjectionSection } from "@/components/dashboard/savings-projection";
 import { SpendingBreakdown } from "@/components/dashboard/spending-breakdown";
+import { CommittedPanel } from "@/components/dashboard/committed-panel";
 import {
   TransactionRow,
   type TransactionRowData,
@@ -13,6 +14,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
 import { projectSavings } from "@/lib/utils/projection";
 import { monthlyBurnRate, spendingSummary } from "@/lib/utils/spending";
+import { commitmentBreakdown } from "@/lib/utils/commitments";
 import {
   groupByCategory,
   groupByMerchant,
@@ -88,6 +90,7 @@ export default async function DashboardPage() {
   const runway = calculateRunway(savings, salary, burnRate);
   const projection = projectSavings(savings, salary, burnRate);
   const summary = spendingSummary(txs);
+  const commitments = commitmentBreakdown(recurring, salary);
 
   // Latest 5 transactions with category info, for the "Recent" section.
   // Supabase types the joined `category` as an array, but with a single FK it's
@@ -170,6 +173,10 @@ export default async function DashboardPage() {
             />
           </div>
         </section>
+
+        {/* Sits directly under the runway, because it explains the burn rate
+            the runway is built on: how much of it you can't choose. */}
+        <CommittedPanel summary={commitments} />
 
         {/* Spending breakdowns side by side */}
         {/* items-start so the shorter card keeps its own height instead of
