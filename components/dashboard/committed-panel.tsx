@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Repeat } from "lucide-react";
 import type { CommitmentSummary } from "@/lib/utils/commitments";
 import { formatCurrency } from "@/lib/utils/format";
@@ -9,6 +10,10 @@ interface CommittedPanelProps {
 
 export function CommittedPanel({ summary }: CommittedPanelProps) {
   const { commitments, total, remaining, shareOfIncome } = summary;
+
+  if (commitments.length === 0) {
+    return <EmptyState />;
+  }
 
   // A share over 1 means the commitments alone outrun the income. Clamping
   // the bar keeps the layout intact; the copy underneath says what happened.
@@ -119,6 +124,31 @@ export function CommittedPanel({ summary }: CommittedPanelProps) {
           ))}
         </ul>
       </div>
+    </section>
+  );
+}
+
+function EmptyState() {
+  return (
+    <section className="rounded border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] p-6 text-center sm:p-8">
+      <Repeat
+        size={28}
+        className="mx-auto text-[var(--color-foreground-subtle)]"
+        aria-hidden
+      />
+      <h2 className="mt-3 font-medium text-[var(--color-foreground)]">
+        Nothing committed yet
+      </h2>
+      <p className="mx-auto mt-1.5 max-w-sm text-sm text-[var(--color-foreground-muted)]">
+        Rent, insurance and subscriptions are owed whether or not you spend
+        anything else. Set an expense to repeat and it&rsquo;ll show up here.
+      </p>
+      <Link
+        href="/transactions/new"
+        className="btn-primary mt-4 px-4 py-2 text-sm"
+      >
+        Log a recurring expense
+      </Link>
     </section>
   );
 }
