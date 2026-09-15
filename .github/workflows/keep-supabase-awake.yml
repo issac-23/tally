@@ -1,0 +1,39 @@
+# Supabase pauses a free-tier project after 7 days with no requests, and
+# restoring it is manual. One request every few days resets that clock.
+#
+# pg_cron inside the database does NOT count — the activity has to arrive
+# from outside, through the API gateway.
+name: keep supabase awake
+
+on:
+  schedule:
+    # Every third day at 06:00 UTC. Well inside the 7-day window, so a single
+    # missed run (GitHub drops scheduled jobs under load) isn't a problem.
+    - cron: "0 6 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query the database
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+
+          status=$(curl -sS -o /tmp/body -w '%{http_code}' \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            "${SUPABASE_URL}/rest/v1/categories?select=id&limit=1")
+
+          echo "HTTP ${status}"
+
+          # 200 is a real query. 401/403 still reached Postgres through the
+          # gateway, which is all the inactivity timer cares about — RLS
+          # rejecting an anonymous read is a success for this job's purpose.
+          case "${status}" in
+            200|401|403) echo "project is awake" ;;
+            *) echo "unexpected response:"; cat /tmp/body; exit 1 ;;
+          esac
