@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import type { TransactionRowData } from "@/components/dashboard/transaction-row";
 import { TransactionBrowser } from "@/components/dashboard/transaction-browser";
 import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
-import { formatCurrency } from "@/lib/utils/format";
 
 export default async function TransactionsPage() {
   const supabase = await createClient();
@@ -27,8 +26,6 @@ export default async function TransactionsPage() {
 
   const transactions = (transactionsData ?? []) as unknown as TransactionRowData[];
 
-  const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
-
   return (
     <main className="px-4 py-6 sm:px-6 sm:py-10">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -39,9 +36,6 @@ export default async function TransactionsPage() {
             <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Transactions
             </h1>
-            <p className="text-sm text-[var(--color-foreground-muted)]">
-              {transactions.length} total · {formatCurrency(total)} spent
-            </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <ExportTransactionsButton transactions={transactions} />

@@ -44,6 +44,7 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
     [transactions, filter]
   );
   const categories = useMemo(() => usedCategories(transactions), [transactions]);
+  const visibleTotal = visible.reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
     <div className="space-y-6">
@@ -94,6 +95,16 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
           Recurring
         </button>
       </div>
+
+      {/* Reads against the filter bar, so it's obvious the numbers are
+          describing what's on screen rather than the whole account. */}
+      <p className="px-1 text-sm text-[var(--color-foreground-muted)]">
+        {visible.length === transactions.length
+          ? `${transactions.length} total`
+          : `${visible.length} of ${transactions.length}`}{" "}
+        · <span className="tabular-nums">{formatCurrency(visibleTotal)}</span>{" "}
+        spent
+      </p>
 
       <div className="space-y-6">
         {groupByMonth(visible).map((group) => (
