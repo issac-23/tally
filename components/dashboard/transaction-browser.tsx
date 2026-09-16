@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Repeat, Search } from "lucide-react";
+import { Repeat, Search, SearchX } from "lucide-react";
 import {
   TransactionRow,
   type TransactionRowData,
@@ -112,6 +112,8 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
         <ExportTransactionsButton transactions={visible} />
       </div>
 
+      {visible.length === 0 && <NoMatches onClear={() => setFilter(EMPTY_FILTER)} />}
+
       <div className="space-y-6">
         {groupByMonth(visible).map((group) => (
           <section key={group.key} className="space-y-2">
@@ -136,6 +138,35 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
           </section>
         ))}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Distinct from the page's "No transactions yet". That one means log
+ * something; this one means change what you typed.
+ */
+function NoMatches({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="rounded border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] p-8 text-center">
+      <SearchX
+        size={28}
+        className="mx-auto text-[var(--color-foreground-subtle)]"
+        aria-hidden
+      />
+      <p className="mt-3 font-medium text-[var(--color-foreground)]">
+        Nothing matches
+      </p>
+      <p className="mt-1.5 text-sm text-[var(--color-foreground-muted)]">
+        No transaction fits those filters.
+      </p>
+      <button
+        type="button"
+        onClick={onClear}
+        className="mt-4 rounded border border-[var(--color-border-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-surface)]"
+      >
+        Clear filters
+      </button>
     </div>
   );
 }
