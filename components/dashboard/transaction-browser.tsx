@@ -48,21 +48,21 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row">
-      <div className="relative flex-1">
-        <Search
-          size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-foreground-muted)]"
-          aria-hidden
-        />
-        <input
-          type="search"
-          value={filter.query}
-          onChange={(e) => setFilter({ ...filter, query: e.target.value })}
-          placeholder="Search merchant, note or category…"
-          aria-label="Search transactions"
-          className="w-full rounded border border-[var(--color-border-strong)] bg-white py-2.5 pl-9 pr-3 text-[var(--color-foreground)] transition-all focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)]"
-        />
-      </div>
+        <div className="relative flex-1">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-foreground-muted)]"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={filter.query}
+            onChange={(e) => setFilter({ ...filter, query: e.target.value })}
+            placeholder="Search merchant, note or category…"
+            aria-label="Search transactions"
+            className="w-full rounded border border-[var(--color-border-strong)] bg-white py-2.5 pl-9 pr-3 text-[var(--color-foreground)] transition-all focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)]"
+          />
+        </div>
 
         <select
           value={filter.categoryId}
