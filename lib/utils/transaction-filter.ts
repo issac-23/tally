@@ -9,10 +9,11 @@
 interface FilterableTransaction {
   description?: string | null;
   merchant?: string | null;
+  category?: { id: string; name: string } | null;
 }
 
 export interface TransactionFilter {
-  /** Free text, matched against merchant and note. */
+  /** Free text, matched against merchant, note and category. */
   query: string;
 }
 
@@ -31,5 +32,9 @@ export function filterTransactions<T extends FilterableTransaction>(
 }
 
 function haystack(t: FilterableTransaction): string {
-  return [t.merchant ?? "", t.description ?? ""].join(" ").toLowerCase();
+  // The category is on screen next to the merchant, so people type it
+  // expecting it to work. "groceries" should find the groceries.
+  return [t.merchant ?? "", t.description ?? "", t.category?.name ?? ""]
+    .join(" ")
+    .toLowerCase();
 }

@@ -1,11 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { EMPTY_FILTER, filterTransactions } from "./transaction-filter";
 
+const FOOD = { id: "cat-food", name: "Food & Drink" };
+const SHOPPING = { id: "cat-shopping", name: "Shopping" };
+const GROCERIES = { id: "cat-groceries", name: "Groceries" };
+
 const ROWS = [
-  { id: "1", merchant: "Blue Bottle", description: "Coffee with Sam" },
-  { id: "2", merchant: "Uniqlo", description: null },
-  { id: "3", merchant: null, description: "Storage unit" },
-  { id: "4", merchant: "Whole Foods", description: "Weekly shop" },
+  { id: "1", merchant: "Blue Bottle", description: "Coffee with Sam", category: FOOD },
+  { id: "2", merchant: "Uniqlo", description: null, category: SHOPPING },
+  { id: "3", merchant: null, description: "Storage unit", category: null },
+  { id: "4", merchant: "Whole Foods", description: "Weekly shop", category: GROCERIES },
 ];
 
 function ids(rows: Array<{ id: string }>) {
@@ -32,7 +36,20 @@ describe("filterTransactions", () => {
 
   it("matches partway through a word", () => {
     // Typing as you go should narrow the list, not wait for whole words.
-    expect(ids(filterTransactions(ROWS, { query: "foo" }))).toEqual(["4"]);
+    expect(ids(filterTransactions(ROWS, { query: "uniq" }))).toEqual(["2"]);
+  });
+
+  it("matches across every searched field at once", () => {
+    // "foo" is in the Whole Foods merchant and in the Food & Drink category.
+    expect(ids(filterTransactions(ROWS, { query: "foo" }))).toEqual(["1", "4"]);
+  });
+
+  it("matches the category name", () => {
+    expect(ids(filterTransactions(ROWS, { query: "groceries" }))).toEqual(["4"]);
+  });
+
+  it("survives a row with no category", () => {
+    expect(ids(filterTransactions(ROWS, { query: "storage" }))).toEqual(["3"]);
   });
 
   it("returns nothing when nothing matches", () => {
