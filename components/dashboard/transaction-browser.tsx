@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Repeat, Search } from "lucide-react";
 import {
   TransactionRow,
   type TransactionRowData,
@@ -77,6 +77,22 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
             </option>
           ))}
         </select>
+
+        <button
+          type="button"
+          onClick={() =>
+            setFilter({ ...filter, recurringOnly: !filter.recurringOnly })
+          }
+          aria-pressed={filter.recurringOnly}
+          className={`inline-flex shrink-0 items-center justify-center gap-2 rounded border px-3 py-2.5 text-sm font-medium transition-colors ${
+            filter.recurringOnly
+              ? "border-[var(--color-brand)] bg-[var(--color-brand-subtle)] text-[var(--color-brand)]"
+              : "border-[var(--color-border-strong)] bg-white text-[var(--color-foreground-muted)] hover:bg-[var(--color-surface)]"
+          }`}
+        >
+          <Repeat size={15} aria-hidden />
+          Recurring
+        </button>
       </div>
 
       <div className="space-y-6">
