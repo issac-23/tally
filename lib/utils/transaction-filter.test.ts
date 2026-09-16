@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { EMPTY_FILTER, filterTransactions } from "./transaction-filter";
+import {
+  EMPTY_FILTER,
+  filterTransactions,
+  isFilterActive,
+} from "./transaction-filter";
 
 const FOOD = { id: "cat-food", name: "Food & Drink" };
 const SHOPPING = { id: "cat-shopping", name: "Shopping" };
@@ -92,5 +96,23 @@ describe("filterTransactions", () => {
     expect(
       ids(filterTransactions(rows, { ...EMPTY_FILTER, recurringOnly: true }))
     ).toEqual(["1", "3"]);
+  });
+});
+
+describe("isFilterActive", () => {
+  it("is false for the empty filter", () => {
+    expect(isFilterActive(EMPTY_FILTER)).toBe(false);
+  });
+
+  it("ignores a query that's only whitespace", () => {
+    expect(isFilterActive({ ...EMPTY_FILTER, query: "   " })).toBe(false);
+  });
+
+  it.each([
+    ["a query", { query: "coffee" }],
+    ["a category", { categoryId: "cat-food" }],
+    ["recurring only", { recurringOnly: true }],
+  ])("is true with %s", (_label, patch) => {
+    expect(isFilterActive({ ...EMPTY_FILTER, ...patch })).toBe(true);
   });
 });

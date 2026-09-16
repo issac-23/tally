@@ -43,6 +43,21 @@ export function filterTransactions<T extends FilterableTransaction>(
   });
 }
 
+/**
+ * Whether the user has narrowed anything.
+ *
+ * "No transactions yet" and "nothing matched your search" are different
+ * problems with different fixes, and the list can't tell them apart from
+ * the row count alone.
+ */
+export function isFilterActive(filter: TransactionFilter): boolean {
+  return (
+    filter.query.trim() !== "" ||
+    filter.categoryId !== "" ||
+    filter.recurringOnly
+  );
+}
+
 function haystack(t: FilterableTransaction): string {
   // The category is on screen next to the merchant, so people type it
   // expecting it to work. "groceries" should find the groceries.
