@@ -6,6 +6,7 @@ import {
   TransactionRow,
   type TransactionRowData,
 } from "@/components/dashboard/transaction-row";
+import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
 import { groupByMonth } from "@/lib/utils/aggregation";
 import { formatCurrency } from "@/lib/utils/format";
 import {
@@ -98,13 +99,18 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
 
       {/* Reads against the filter bar, so it's obvious the numbers are
           describing what's on screen rather than the whole account. */}
-      <p className="px-1 text-sm text-[var(--color-foreground-muted)]">
-        {visible.length === transactions.length
-          ? `${transactions.length} total`
-          : `${visible.length} of ${transactions.length}`}{" "}
-        · <span className="tabular-nums">{formatCurrency(visibleTotal)}</span>{" "}
-        spent
-      </p>
+      <div className="flex items-center justify-between gap-3 px-1">
+        <p className="text-sm text-[var(--color-foreground-muted)]">
+          {visible.length === transactions.length
+            ? `${transactions.length} total`
+            : `${visible.length} of ${transactions.length}`}{" "}
+          · <span className="tabular-nums">{formatCurrency(visibleTotal)}</span>{" "}
+          spent
+        </p>
+        {/* Exports what's on screen. Filtering to one category and then
+            getting the whole history in the file is a nasty surprise. */}
+        <ExportTransactionsButton transactions={visible} />
+      </div>
 
       <div className="space-y-6">
         {groupByMonth(visible).map((group) => (

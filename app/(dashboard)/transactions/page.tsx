@@ -4,7 +4,6 @@ import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { TransactionRowData } from "@/components/dashboard/transaction-row";
 import { TransactionBrowser } from "@/components/dashboard/transaction-browser";
-import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
 
 export default async function TransactionsPage() {
   const supabase = await createClient();
@@ -38,7 +37,6 @@ export default async function TransactionsPage() {
             </h1>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <ExportTransactionsButton transactions={transactions} />
             <Link
               href="/transactions/new"
               className="btn-primary w-full px-4 py-2 text-sm sm:w-auto"
