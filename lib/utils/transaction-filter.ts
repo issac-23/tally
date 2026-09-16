@@ -15,20 +15,23 @@ interface FilterableTransaction {
 export interface TransactionFilter {
   /** Free text, matched against merchant, note and category. */
   query: string;
+  /** A category id, or "" for every category. */
+  categoryId: string;
 }
 
-export const EMPTY_FILTER: TransactionFilter = { query: "" };
+export const EMPTY_FILTER: TransactionFilter = { query: "", categoryId: "" };
 
 export function filterTransactions<T extends FilterableTransaction>(
   transactions: T[],
   filter: TransactionFilter
 ): T[] {
   const query = filter.query.trim().toLowerCase();
-  if (query === "") return transactions;
 
-  return transactions.filter((t) =>
-    haystack(t).includes(query)
-  );
+  return transactions.filter((t) => {
+    if (filter.categoryId && t.category?.id !== filter.categoryId) return false;
+    if (query && !haystack(t).includes(query)) return false;
+    return true;
+  });
 }
 
 function haystack(t: FilterableTransaction): string {
