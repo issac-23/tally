@@ -19,6 +19,20 @@ interface TransactionBrowserProps {
 }
 
 /**
+ * Only the categories actually used by these rows. Offering all twelve
+ * would let you pick one and get nothing, which reads as a bug.
+ */
+function usedCategories(transactions: TransactionRowData[]) {
+  const seen = new Map<string, { id: string; name: string }>();
+  for (const t of transactions) {
+    if (t.category && !seen.has(t.category.id)) {
+      seen.set(t.category.id, { id: t.category.id, name: t.category.name });
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
  * The whole history is already on the page, so narrowing it is a client
  * concern — no round trip, and it stays responsive while typing.
  */
@@ -29,10 +43,12 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
     () => filterTransactions(transactions, filter),
     [transactions, filter]
   );
+  const categories = useMemo(() => usedCategories(transactions), [transactions]);
 
   return (
     <div className="space-y-6">
-      <div className="relative">
+      <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="relative flex-1">
         <Search
           size={16}
           className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-foreground-muted)]"
@@ -46,6 +62,21 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
           aria-label="Search transactions"
           className="w-full rounded border border-[var(--color-border-strong)] bg-white py-2.5 pl-9 pr-3 text-[var(--color-foreground)] transition-all focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)]"
         />
+      </div>
+
+        <select
+          value={filter.categoryId}
+          onChange={(e) => setFilter({ ...filter, categoryId: e.target.value })}
+          aria-label="Filter by category"
+          className="rounded border border-[var(--color-border-strong)] bg-white px-3 py-2.5 text-sm text-[var(--color-foreground)] transition-all focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)] sm:w-48"
+        >
+          <option value="">All categories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="space-y-6">
