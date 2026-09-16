@@ -97,9 +97,9 @@ export function TransactionBrowser({ transactions }: TransactionBrowserProps) {
         </button>
       </div>
 
-      {/* Reads against the filter bar, so it's obvious the numbers are
-          describing what's on screen rather than the whole account. */}
-      <div className="flex items-center justify-between gap-3 px-1">
+      {/* Stacks on a phone. Side by side, "22 total · $129,217 spent" wrapped
+          onto three lines beside the export button. */}
+      <div className="flex flex-col items-start gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-[var(--color-foreground-muted)]">
           {visible.length === transactions.length
             ? `${transactions.length} total`
