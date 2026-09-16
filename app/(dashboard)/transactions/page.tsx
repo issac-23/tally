@@ -2,13 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Inbox } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import {
-  TransactionRow,
-  type TransactionRowData,
-} from "@/components/dashboard/transaction-row";
-import { ExportTransactionsButton } from "@/components/dashboard/export-transactions-button";
-import { formatCurrency } from "@/lib/utils/format";
-import { groupByMonth } from "@/lib/utils/aggregation";
+import type { TransactionRowData } from "@/components/dashboard/transaction-row";
+import { TransactionBrowser } from "@/components/dashboard/transaction-browser";
 
 export default async function TransactionsPage() {
   const supabase = await createClient();
@@ -30,8 +25,6 @@ export default async function TransactionsPage() {
 
   const transactions = (transactionsData ?? []) as unknown as TransactionRowData[];
 
-  const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
-
   return (
     <main className="px-4 py-6 sm:px-6 sm:py-10">
       <div className="max-w-3xl mx-auto space-y-8">
@@ -42,12 +35,8 @@ export default async function TransactionsPage() {
             <h1 className="text-display font-display tracking-tight text-[var(--color-foreground)]">
               Transactions
             </h1>
-            <p className="text-sm text-[var(--color-foreground-muted)]">
-              {transactions.length} total · {formatCurrency(total)} spent
-            </p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <ExportTransactionsButton transactions={transactions} />
             <Link
               href="/transactions/new"
               className="btn-primary w-full px-4 py-2 text-sm sm:w-auto"
@@ -59,32 +48,7 @@ export default async function TransactionsPage() {
 
         {/* List, bucketed by month so a long history stays scannable */}
         {transactions.length > 0 ? (
-          <div className="space-y-6">
-            {groupByMonth(transactions).map((group) => (
-              <section key={group.key} className="space-y-2">
-                <div className="flex items-baseline justify-between gap-3 px-1">
-                  <h2 className="text-sm font-semibold text-[var(--color-foreground)]">
-                    {group.label}
-                  </h2>
-                  <p className="text-sm tabular-nums text-[var(--color-foreground-muted)]">
-                    {formatCurrency(group.total)}
-                  </p>
-                </div>
-                <ul className="overflow-hidden rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
-                  {group.transactions.map((t, i) => (
-                    <li
-                      key={t.id}
-                      className={
-                        i > 0 ? "border-t border-[var(--color-border)]" : ""
-                      }
-                    >
-                      <TransactionRow transaction={t} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
+          <TransactionBrowser transactions={transactions} />
         ) : (
           <EmptyState />
         )}
