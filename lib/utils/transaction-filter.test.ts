@@ -71,7 +71,26 @@ describe("filterTransactions", () => {
   it("applies the category and the query together", () => {
     // "foo" alone matches Blue Bottle and Whole Foods; the category decides.
     expect(
-      ids(filterTransactions(ROWS, { query: "foo", categoryId: "cat-groceries" }))
+      ids(
+        filterTransactions(ROWS, {
+          ...EMPTY_FILTER,
+          query: "foo",
+          categoryId: "cat-groceries",
+        })
+      )
     ).toEqual(["4"]);
+  });
+
+  it("keeps only standing commitments when asked", () => {
+    const rows = [
+      { id: "1", merchant: "Greystar", recurrence: "monthly" },
+      { id: "2", merchant: "Uniqlo", recurrence: "once" },
+      { id: "3", merchant: "Geico", recurrence: "yearly" },
+      // A row written before the recurrence column existed.
+      { id: "4", merchant: "Old row", recurrence: null },
+    ];
+    expect(
+      ids(filterTransactions(rows, { ...EMPTY_FILTER, recurringOnly: true }))
+    ).toEqual(["1", "3"]);
   });
 });

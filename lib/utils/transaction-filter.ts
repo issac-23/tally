@@ -9,6 +9,7 @@
 interface FilterableTransaction {
   description?: string | null;
   merchant?: string | null;
+  recurrence?: string | null;
   category?: { id: string; name: string } | null;
 }
 
@@ -17,9 +18,15 @@ export interface TransactionFilter {
   query: string;
   /** A category id, or "" for every category. */
   categoryId: string;
+  /** Show only standing commitments. */
+  recurringOnly: boolean;
 }
 
-export const EMPTY_FILTER: TransactionFilter = { query: "", categoryId: "" };
+export const EMPTY_FILTER: TransactionFilter = {
+  query: "",
+  categoryId: "",
+  recurringOnly: false,
+};
 
 export function filterTransactions<T extends FilterableTransaction>(
   transactions: T[],
@@ -28,6 +35,8 @@ export function filterTransactions<T extends FilterableTransaction>(
   const query = filter.query.trim().toLowerCase();
 
   return transactions.filter((t) => {
+    // Anything without a recurrence, or explicitly "once", is a one-off.
+    if (filter.recurringOnly && (t.recurrence ?? "once") === "once") return false;
     if (filter.categoryId && t.category?.id !== filter.categoryId) return false;
     if (query && !haystack(t).includes(query)) return false;
     return true;
