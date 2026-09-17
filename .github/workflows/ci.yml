@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run test:run
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          # Nothing useful to report from a throwaway runner.
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      # The fixture layer stubs out Supabase entirely. This asserts the
+      # NODE_ENV guard still keeps it out of the production bundle.
+      - run: npm run verify:no-fixtures
