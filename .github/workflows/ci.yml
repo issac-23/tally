@@ -23,3 +23,9 @@ jobs:
         run: npx tsc --noEmit
 
       - run: npm run lint
+
+      - run: npm run build
+
+      # The fixture layer stubs out Supabase entirely. This asserts the
+      # NODE_ENV guard still keeps it out of the production bundle.
+      - run: npm run verify:no-fixtures
