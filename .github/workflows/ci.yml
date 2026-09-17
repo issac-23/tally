@@ -18,3 +18,8 @@ jobs:
       - run: npm ci
 
       - run: npm run test:run
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - run: npm run lint
