@@ -7,6 +7,12 @@ interface ErrorPanelProps {
   message: string;
   /** Retry, go home, whatever the boundary can offer. */
   children?: ReactNode;
+  /**
+   * Next's hash for the server-side error. In production the real message
+   * never reaches the browser, so this is the only handle anyone has on
+   * which failure it was.
+   */
+  digest?: string;
 }
 
 /**
@@ -16,7 +22,12 @@ interface ErrorPanelProps {
  * Deliberately never shows `error.message`. A Postgres or fetch error says
  * nothing useful to the person reading it and quite a lot to anyone else.
  */
-export function ErrorPanel({ title, message, children }: ErrorPanelProps) {
+export function ErrorPanel({
+  title,
+  message,
+  children,
+  digest,
+}: ErrorPanelProps) {
   return (
     <div className="mx-auto max-w-sm space-y-4 rounded border border-dashed border-[var(--color-border-strong)] bg-[var(--color-surface-raised)] p-8 text-center">
       <AlertTriangle
@@ -30,6 +41,11 @@ export function ErrorPanel({ title, message, children }: ErrorPanelProps) {
       <p className="text-sm text-[var(--color-foreground-muted)]">{message}</p>
       {children && (
         <div className="flex flex-col items-center gap-2 pt-1">{children}</div>
+      )}
+      {digest && (
+        <p className="pt-1 font-mono text-[11px] text-[var(--color-foreground-subtle)]">
+          {digest}
+        </p>
       )}
     </div>
   );
