@@ -169,6 +169,21 @@ describe("createFixtureClient", () => {
     ).toThrow(/not implemented/i);
   });
 
+  it("throws on every read in the boom scenario", async () => {
+    // Thrown rather than returned, so it reaches an error boundary the way
+    // a dropped connection would.
+    const supabase = createFixtureClient({ scenario: "boom" });
+    await expect(supabase.from("transactions").select("id")).rejects.toThrow(
+      /simulated database failure/i
+    );
+  });
+
+  it("leaves reads alone in every other scenario", async () => {
+    const supabase = createFixtureClient({ scenario: "full" });
+    const { error } = await supabase.from("transactions").select("id");
+    expect(error).toBeNull();
+  });
+
   it("throws on an unknown table rather than reporting no rows", async () => {
     const supabase = createFixtureClient({ scenario: "full" });
     await expect(supabase.from("budgets").select("id")).rejects.toThrow(
