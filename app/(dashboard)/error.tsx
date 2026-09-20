@@ -29,6 +29,7 @@ export default function DashboardError({
       <ErrorPanel
         title="We couldn't load your numbers"
         message="Something went wrong reading your account. Your data is fine — this is a problem on the way to it."
+        digest={error.digest}
       >
         <button
           type="button"
