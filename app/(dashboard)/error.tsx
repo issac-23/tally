@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { ErrorPanel } from "@/components/ui/error-panel";
 
 /**
@@ -8,6 +9,7 @@ import { ErrorPanel } from "@/components/ui/error-panel";
  * something — so the copy points at the data rather than the app.
  */
 export default function DashboardError({
+  error,
   unstable_retry,
 }: {
   error: Error & { digest?: string };
@@ -16,6 +18,12 @@ export default function DashboardError({
   // coming back needs.
   unstable_retry: () => void;
 }) {
+  // The screen deliberately doesn't show the message, so without this the
+  // only copy of it is gone.
+  useEffect(() => {
+    console.error("[tally] dashboard render failed", error);
+  }, [error]);
+
   return (
     <main className="px-6 py-20">
       <ErrorPanel
