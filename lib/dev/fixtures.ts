@@ -695,6 +695,12 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
   const auth = guardUnsupported(
     {
       async getUser() {
+        // A real outage takes auth down with the database — Supabase Auth
+        // is Postgres too. Without this, the landing page still resolves a
+        // session and redirects, so app/error.tsx is unreachable.
+        if (failReads) {
+          throw new Error("[tally fixtures] simulated auth failure");
+        }
         if (signedOut) return { data: { user: null }, error: null };
         return {
           data: {
