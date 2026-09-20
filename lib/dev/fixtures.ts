@@ -51,6 +51,7 @@ export type Scenario =
   | "overcommitted"
   | "long"
   | "error"
+  | "boom"
   | "signedout";
 
 export const SCENARIOS: readonly Scenario[] = [
@@ -62,6 +63,7 @@ export const SCENARIOS: readonly Scenario[] = [
   "overcommitted", // standing commitments cost more than the income
   "long", // long names and large amounts, for layout
   "error", // every write fails
+  "boom", // every read throws — for the error boundaries
   "signedout", // no session — lands on the landing page
 ] as const;
 
@@ -413,7 +415,8 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
   constructor(
     private readonly table: string,
     private readonly store: Store,
-    private readonly failWrites: boolean
+    private readonly failWrites: boolean,
+    private readonly failReads = false
   ) {}
 
   select(columns = "*") {
@@ -501,6 +504,14 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
 
     if (this.mode !== "select" && this.failWrites) {
       return { data: null, error: WRITE_FAILURE };
+    }
+
+    // Thrown, not returned: a dropped connection surfaces as an exception,
+    // which is what the error boundaries are there to catch.
+    if (this.failReads) {
+      throw new Error(
+        `[tally fixtures] simulated database failure reading "${this.table}"`
+      );
     }
 
     switch (this.table) {
@@ -668,6 +679,7 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
   const base = baseScenario(scenario);
   const store = getStore(scenario, base);
   const failWrites = base === "error";
+  const failReads = base === "boom";
   const signedOut = base === "signedout";
 
   if (!globalForFixtures.__tallyFixtureWarned) {
@@ -710,7 +722,7 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
       auth,
       from(table: string) {
         return guardUnsupported(
-          new QueryBuilder(table, store, failWrites),
+          new QueryBuilder(table, store, failWrites, failReads),
           `from("${table}")`
         );
       },
