@@ -178,6 +178,14 @@ describe("createFixtureClient", () => {
     );
   });
 
+  it("takes auth down with the database in the boom scenario", async () => {
+    // The landing page only calls getUser. If that kept working, it would
+    // redirect instead of failing and the root error boundary would never
+    // be reached.
+    const supabase = createFixtureClient({ scenario: "boom" });
+    await expect(supabase.auth.getUser()).rejects.toThrow(/simulated auth failure/i);
+  });
+
   it("leaves reads alone in every other scenario", async () => {
     const supabase = createFixtureClient({ scenario: "full" });
     const { error } = await supabase.from("transactions").select("id");
