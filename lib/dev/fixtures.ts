@@ -49,6 +49,7 @@ export type Scenario =
   | "critical"
   | "recurring"
   | "overcommitted"
+  | "contractending"
   | "long"
   | "error"
   | "boom"
@@ -61,6 +62,7 @@ export const SCENARIOS: readonly Scenario[] = [
   "critical", // days of runway left
   "recurring", // exercises the standing-commitment maths
   "overcommitted", // standing commitments cost more than the income
+  "contractending", // a second income stops partway through the projection
   "long", // long names and large amounts, for layout
   "error", // every write fails
   "boom", // every read throws — for the error boundaries
@@ -104,10 +106,11 @@ interface IncomeSourceRow {
   created_at: string;
 }
 
+// No monthly_salary: the app reads income from income_sources now, and a
+// fixture that still served it would hide a query nobody makes.
 interface ProfileRow {
   id: string;
   savings_balance: number;
-  monthly_salary: number;
   onboarded: boolean;
 }
 
@@ -224,13 +227,21 @@ function salary(amount: number, name = "Salary"): IncomeSourceRow {
   };
 }
 
+/** A date `months` from now, on the last day of that month. */
+function monthEndFromNow(months: number): string {
+  const d = new Date();
+  const end = new Date(d.getFullYear(), d.getMonth() + months + 1, 0);
+  const m = String(end.getMonth() + 1).padStart(2, "0");
+  return `${end.getFullYear()}-${m}-${String(end.getDate()).padStart(2, "0")}`;
+}
+
 function buildStore(scenario: Scenario): Store {
   const categories = presetCategories();
 
   switch (scenario) {
     case "empty":
       return {
-        profile: { id: USER_ID, savings_balance: 12000, monthly_salary: 3800, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 12000, onboarded: true },
         categories,
         incomeSources: [salary(3800)],
         transactions: [],
@@ -238,7 +249,7 @@ function buildStore(scenario: Scenario): Store {
 
     case "new":
       return {
-        profile: { id: USER_ID, savings_balance: 0, monthly_salary: 0, onboarded: false },
+        profile: { id: USER_ID, savings_balance: 0, onboarded: false },
         categories,
         incomeSources: [],
         transactions: [],
@@ -246,7 +257,7 @@ function buildStore(scenario: Scenario): Store {
 
     case "critical":
       return {
-        profile: { id: USER_ID, savings_balance: 900, monthly_salary: 1200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 900, onboarded: true },
         categories,
         incomeSources: [salary(1200)],
         transactions: oneOffHistory(7, 2.2),
@@ -265,7 +276,7 @@ function buildStore(scenario: Scenario): Store {
       rows.push(makeTransaction(3, 62, "MBTA", "cat-transport", "weekly", "Commuter pass"));
       rows.push(...oneOffHistory(11));
       return {
-        profile: { id: USER_ID, savings_balance: 18400, monthly_salary: 4200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 18400, onboarded: true },
         categories,
         incomeSources: [salary(4200)],
         transactions: rows,
@@ -284,10 +295,26 @@ function buildStore(scenario: Scenario): Store {
         ...oneOffHistory(6),
       ];
       return {
-        profile: { id: USER_ID, savings_balance: 5200, monthly_salary: 2200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 5200, onboarded: true },
         categories,
         incomeSources: [salary(2200)],
         transactions: rows,
+      };
+    }
+
+    // A retainer that stops in four months. Until then the balance holds;
+    // after it, the projection should bend and start draining.
+    case "contractending": {
+      const retainer = salary(2600, "Acme retainer");
+      retainer.ends_on = monthEndFromNow(3);
+      return {
+        profile: { id: USER_ID, savings_balance: 14000, onboarded: true },
+        categories,
+        incomeSources: [salary(1800), retainer],
+        transactions: [
+          makeTransaction(6, 1850, "Greystar Rent", "cat-housing", "monthly", "Rent"),
+          ...oneOffHistory(9),
+        ],
       };
     }
 
@@ -314,7 +341,7 @@ function buildStore(scenario: Scenario): Store {
         makeTransaction(1, 0.01, null, null)
       );
       return {
-        profile: { id: USER_ID, savings_balance: 250000, monthly_salary: 9800, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 250000, onboarded: true },
         categories,
         incomeSources: [salary(9800)],
         transactions: rows,
@@ -338,7 +365,7 @@ function buildStore(scenario: Scenario): Store {
       rows.push(makeTransaction(2, 1850, "Greystar Rent", "cat-housing", "monthly", "Rent"));
       rows.push(makeTransaction(4, 15.99, "Netflix", "cat-fun", "monthly"));
       return {
-        profile: { id: USER_ID, savings_balance: 18400, monthly_salary: 4200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 18400, onboarded: true },
         categories,
         incomeSources: [salary(4200)],
         transactions: rows,
