@@ -265,6 +265,16 @@ function Caption({ projection }: { projection: SavingsProjection }) {
       </span>
     );
   }
+  // Not just this month's net: income that stops partway through the window
+  // can leave you saving today and lower in a year, and the badge shouldn't
+  // contradict a line that visibly turns down.
+  if (projection.isDepleting) {
+    return (
+      <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-status-orange)]">
+        Savings fall later on
+      </span>
+    );
+  }
   if (projection.monthlyNet > 0) {
     return (
       <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-status-green)]">

@@ -137,3 +137,20 @@ describe("projectSavings with income that changes", () => {
     expect(result.depletionMonth).toBeCloseTo(12, 6);
   });
 });
+
+describe("isDepleting with income that stops", () => {
+  it("is true when today's net is positive but the window ends lower", () => {
+    // Saving for four months, then the retainer stops and it drains.
+    const income = [4400, 4400, 4400, 4400, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800];
+    const result = projectSavings(14000, income, 3016);
+    expect(result.monthlyNet).toBeGreaterThan(0);
+    expect(result.depletionMonth).toBeNull();
+    expect(result.isDepleting).toBe(true);
+  });
+
+  it("stays false when the window ends higher", () => {
+    const income = [4400, 4400, 4400, 4400, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200];
+    const result = projectSavings(14000, income, 3016);
+    expect(result.isDepleting).toBe(false);
+  });
+});
