@@ -22,9 +22,14 @@ export interface SavingsProjection {
    * Null when not depleting, or when depletion falls beyond the window.
    */
   depletionMonth: number | null;
-  /** Net flow is negative (spending exceeds income). */
+  /**
+   * Savings are heading down: either they run out inside the window, or
+   * the balance ends it lower than it starts. With flat income that's just
+   * "net flow is negative"; with income that stops partway it's the only
+   * honest reading.
+   */
   isDepleting: boolean;
-  /** Monthly cash flow: salary - avg spend. */
+  /** Cash flow in the current month: income - avg spend. */
   monthlyNet: number;
 }
 
@@ -78,9 +83,8 @@ export function projectSavings(
   return {
     points,
     depletionMonth,
-    // Depleting means the balance actually runs out inside the window, or
-    // it's heading down from here.
-    isDepleting: depletionMonth !== null || monthlyNet < 0,
+    isDepleting:
+      depletionMonth !== null || monthlyNet < 0 || balance < currentSavings,
     monthlyNet,
   };
 }
