@@ -33,6 +33,27 @@ export function isActiveIn(source: IncomeSource, date: Date): boolean {
   return true;
 }
 
+/**
+ * Income for each of the next `months` months, index 0 being this one.
+ *
+ * The projection walks this rather than multiplying one number, which is
+ * what makes a contract ending mid-window visible as a bend in the line.
+ */
+export function incomeByMonth(
+  sources: IncomeSource[],
+  months: number,
+  from: Date = new Date()
+): number[] {
+  const schedule: number[] = [];
+  for (let m = 0; m <= months; m++) {
+    // Day 1 avoids the month-end rollover: adding a month to 31 March gives
+    // 31 April, which is 1 May.
+    const month = new Date(from.getFullYear(), from.getMonth() + m, 1);
+    schedule.push(monthlyIncome(sources, month));
+  }
+  return schedule;
+}
+
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
