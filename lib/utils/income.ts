@@ -6,7 +6,22 @@
  * every month, a dividend twice a year.
  */
 
-import { monthlyEquivalent } from "./recurrence";
+import { RECURRENCE_OPTIONS, monthlyEquivalent } from "./recurrence";
+
+/**
+ * The cadences income can have.
+ *
+ * "One-off" and "daily" are dropped: a single payment isn't a source, and
+ * nobody is paid daily. Sharing the rest with expenses means a fortnightly
+ * paycheck and a fortnightly bill are described the same way.
+ */
+export const INCOME_RECURRENCE_OPTIONS = RECURRENCE_OPTIONS.filter(
+  (option) => option.value !== "once" && option.value !== "daily"
+);
+
+export function isIncomeRecurrence(value: unknown): boolean {
+  return INCOME_RECURRENCE_OPTIONS.some((option) => option.value === value);
+}
 
 export interface IncomeSource {
   id: string;
@@ -76,4 +91,80 @@ export function monthlyIncome(
   return sources
     .filter((s) => isActiveIn(s, on))
     .reduce((sum, s) => sum + sourceMonthlyAmount(s), 0);
+}
+
+export interface IncomeInput {
+  name: string;
+  amount: number | string;
+  recurrence: string;
+  starts_on?: string | null;
+  ends_on?: string | null;
+}
+
+export interface IncomeFields {
+  name: string;
+  amount: number;
+  recurrence: string;
+  starts_on: string | null;
+  ends_on: string | null;
+}
+
+export type IncomeValidation =
+  | { ok: true; fields: IncomeFields }
+  | { ok: false; error: string };
+
+/**
+ * Checked here as well as by the CHECK constraints, so a bad value comes
+ * back as a readable message instead of a Postgres error.
+ */
+export function validateIncomeInput(input: IncomeInput): IncomeValidation {
+  const name = input.name.trim();
+  if (name === "") {
+    return { ok: false, error: "Give it a name." };
+  }
+
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, error: "Amount must be greater than zero." };
+  }
+
+  if (!isIncomeRecurrence(input.recurrence)) {
+    return { ok: false, error: "Pick how often it's paid." };
+  }
+
+  const startsOn = blankToNull(input.starts_on);
+  const endsOn = blankToNull(input.ends_on);
+  if (startsOn && !isIsoDate(startsOn)) {
+    return { ok: false, error: "That start date isn't a real date." };
+  }
+  if (endsOn && !isIsoDate(endsOn)) {
+    return { ok: false, error: "That end date isn't a real date." };
+  }
+  if (startsOn && endsOn && endsOn < startsOn) {
+    return { ok: false, error: "It can't end before it starts." };
+  }
+
+  return {
+    ok: true,
+    fields: {
+      name,
+      amount: Math.round(amount * 100) / 100,
+      recurrence: input.recurrence,
+      starts_on: startsOn,
+      ends_on: endsOn,
+    },
+  };
+}
+
+function blankToNull(value: string | null | undefined): string | null {
+  const trimmed = (value ?? "").trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+function isIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return (
+    !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+  );
 }

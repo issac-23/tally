@@ -4,6 +4,7 @@ import {
   isActiveIn,
   monthlyIncome,
   sourceMonthlyAmount,
+  validateIncomeInput,
 } from "./income";
 
 function source(overrides: Record<string, unknown> = {}) {
@@ -124,5 +125,54 @@ describe("incomeByMonth", () => {
     const sources = [source({ id: "b", amount: 2000, starts_on: "2027-04-01" })];
     const schedule = incomeByMonth(sources, 2, new Date(2027, 2, 31));
     expect(schedule.map((n) => Math.round(n))).toEqual([0, 2000, 2000]);
+  });
+});
+
+describe("validateIncomeInput", () => {
+  function input(overrides: Record<string, unknown> = {}) {
+    return { name: "Salary", amount: 4200, recurrence: "monthly", ...overrides };
+  }
+
+  it("accepts a well-formed source", () => {
+    const result = validateIncomeInput(input());
+    expect(result).toEqual({
+      ok: true,
+      fields: {
+        name: "Salary",
+        amount: 4200,
+        recurrence: "monthly",
+        starts_on: null,
+        ends_on: null,
+      },
+    });
+  });
+
+  it("requires a name", () => {
+    expect(validateIncomeInput(input({ name: "   " }))).toMatchObject({ ok: false });
+  });
+
+  it.each([0, -1, "abc", Number.NaN])("rejects the amount %p", (amount) => {
+    expect(validateIncomeInput(input({ amount }))).toMatchObject({ ok: false });
+  });
+
+  it("rejects cadences income can't have", () => {
+    // A one-off payment isn't a source, and nobody is paid daily.
+    expect(validateIncomeInput(input({ recurrence: "once" }))).toMatchObject({ ok: false });
+    expect(validateIncomeInput(input({ recurrence: "daily" }))).toMatchObject({ ok: false });
+  });
+
+  it("rejects an end date before the start", () => {
+    expect(
+      validateIncomeInput(input({ starts_on: "2027-06-01", ends_on: "2027-05-31" }))
+    ).toMatchObject({ ok: false, error: "It can't end before it starts." });
+  });
+
+  it("rejects a date that isn't a real calendar day", () => {
+    expect(validateIncomeInput(input({ ends_on: "2027-02-30" }))).toMatchObject({ ok: false });
+  });
+
+  it("treats blank dates as absent", () => {
+    const result = validateIncomeInput(input({ starts_on: "", ends_on: "  " }));
+    expect(result).toMatchObject({ ok: true });
   });
 });
