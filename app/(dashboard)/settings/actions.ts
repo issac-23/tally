@@ -20,10 +20,9 @@ export interface DeleteCategoryResult {
 }
 
 export async function updateProfile(
-  savingsBalance: number,
-  monthlySalary: number
+  savingsBalance: number
 ): Promise<UpdateProfileResult> {
-  const validationError = validateProfileInput(savingsBalance, monthlySalary);
+  const validationError = validateProfileInput(savingsBalance);
   if (validationError) {
     return { error: validationError };
   }
@@ -41,10 +40,7 @@ export async function updateProfile(
   // user has clearly already gone through onboarding to reach Settings.
   const { error } = await supabase
     .from("profiles")
-    .update({
-      savings_balance: savingsBalance,
-      monthly_salary: monthlySalary,
-    })
+    .update({ savings_balance: savingsBalance })
     .eq("id", user.id);
 
   if (error) {

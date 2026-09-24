@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { SettingsForm } from "./settings-form";
 import { CategoryForm } from "./category-form";
+import { IncomeSources } from "./income-sources";
+import type { IncomeSource } from "@/lib/utils/income";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -15,12 +17,18 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("savings_balance, monthly_salary")
+    .select("savings_balance")
     .eq("id", user.id)
     .maybeSingle();
 
   const savings = Number(profile?.savings_balance ?? 0);
-  const salary = Number(profile?.monthly_salary ?? 0);
+
+  const { data: incomeData } = await supabase
+    .from("income_sources")
+    .select("id, name, amount, recurrence, starts_on, ends_on")
+    .order("created_at", { ascending: true });
+
+  const incomeSources = (incomeData ?? []) as unknown as IncomeSource[];
 
   // Only the user's own categories — presets aren't editable, so listing
   // them here would offer a Remove button that RLS would always reject.
@@ -41,8 +49,8 @@ export default async function SettingsPage() {
             Settings
           </h1>
           <p className="text-sm text-[var(--color-foreground-muted)]">
-            Update your savings balance and monthly salary. Tally recalculates
-            your runway and budget the moment you save.
+            Update what you have and what comes in. Tally recalculates your
+            runway and budget the moment you save.
           </p>
         </div>
 
@@ -50,13 +58,26 @@ export default async function SettingsPage() {
           <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
             <div className="mb-5 space-y-1">
               <h2 className="font-display text-h1 text-[var(--color-foreground)]">
-                Money inputs
+                Savings
               </h2>
               <p className="text-sm text-[var(--color-foreground-muted)]">
-                Tally uses these to calculate runway and budget.
+                What you have to fall back on. The runway divides this by what
+                you burn.
               </p>
             </div>
-            <SettingsForm initialSavings={savings} initialSalary={salary} />
+            <SettingsForm initialSavings={savings} />
+          </div>
+
+          <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
+            <div className="mb-5 space-y-1">
+              <h2 className="font-display text-h1 text-[var(--color-foreground)]">
+                Income
+              </h2>
+              <p className="text-sm text-[var(--color-foreground-muted)]">
+                Everything coming in, at whatever cadence it arrives.
+              </p>
+            </div>
+            <IncomeSources sources={incomeSources} />
           </div>
 
           <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
