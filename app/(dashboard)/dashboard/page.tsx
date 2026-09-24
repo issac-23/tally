@@ -181,7 +181,7 @@ export default async function DashboardPage() {
             <SavingsProjectionSection
               projection={projection}
               savings={savings}
-              monthlySalary={income}
+              monthlyIncome={income}
               monthlyAvgSpend={burnRate}
               hasSpendingData={hasSpendingData}
             />
