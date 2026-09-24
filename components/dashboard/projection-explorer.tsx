@@ -15,7 +15,14 @@ import {
 
 interface ProjectionExplorerProps {
   savings: number;
+  /** This month's income. Drives the slider range and the copy. */
   monthlyIncome: number;
+  /**
+   * Income for each month of the window. The projection walks this, so a
+   * contract ending in month 4 bends the line — which the flat figure
+   * above can't express.
+   */
+  incomeSchedule: number[];
   /** The real burn rate. The slider starts here and resets back to it. */
   monthlyAvgSpend: number;
   /** Pre-computed month labels, server-rendered so first paint is stable. */
@@ -34,6 +41,7 @@ interface ProjectionExplorerProps {
 export function ProjectionExplorer({
   savings,
   monthlyIncome,
+  incomeSchedule,
   monthlyAvgSpend,
   monthLabels,
   hasSpendingData,
@@ -51,13 +59,13 @@ export function ProjectionExplorer({
   const isExploring = Math.abs(spend - monthlyAvgSpend) > step / 2;
 
   const baseRunway = calculateRunway(savings, monthlyIncome, monthlyAvgSpend);
-  const baseProjection = projectSavings(savings, monthlyIncome, monthlyAvgSpend);
+  const baseProjection = projectSavings(savings, incomeSchedule, monthlyAvgSpend);
 
   const runway = isExploring
     ? calculateRunway(savings, monthlyIncome, spend)
     : baseRunway;
   const projection = isExploring
-    ? projectSavings(savings, monthlyIncome, spend)
+    ? projectSavings(savings, incomeSchedule, spend)
     : baseProjection;
 
   const delta = runwayDelta(

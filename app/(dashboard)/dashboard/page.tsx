@@ -102,7 +102,8 @@ export default async function DashboardPage() {
   const hasSpendingData = txs.length > 0 || recurring.length > 0;
   const burnRate = monthlyBurnRate(txs, recurring);
   const runway = calculateRunway(savings, income, burnRate);
-  const projection = projectSavings(savings, incomeByMonth(incomeSources, 12), burnRate);
+  const incomeSchedule = incomeByMonth(incomeSources, 12);
+  const projection = projectSavings(savings, incomeSchedule, burnRate);
   const summary = spendingSummary(txs);
   const commitments = commitmentBreakdown(recurring, income);
 
@@ -182,6 +183,7 @@ export default async function DashboardPage() {
               projection={projection}
               savings={savings}
               monthlyIncome={income}
+              incomeSchedule={incomeSchedule}
               monthlyAvgSpend={burnRate}
               hasSpendingData={hasSpendingData}
             />
