@@ -4,7 +4,7 @@ import { ProjectionExplorer } from "@/components/dashboard/projection-explorer";
 interface SavingsProjectionSectionProps {
   projection: SavingsProjection;
   savings: number;
-  monthlySalary: number;
+  monthlyIncome: number;
   monthlyAvgSpend: number;
   /** See RunwayCard — no spending logged means no honest projection. */
   hasSpendingData?: boolean;
@@ -19,14 +19,14 @@ interface SavingsProjectionSectionProps {
 export function SavingsProjectionSection({
   projection,
   savings,
-  monthlySalary,
+  monthlyIncome,
   monthlyAvgSpend,
   hasSpendingData = true,
 }: SavingsProjectionSectionProps) {
   return (
     <ProjectionExplorer
       savings={savings}
-      monthlySalary={monthlySalary}
+      monthlyIncome={monthlyIncome}
       monthlyAvgSpend={monthlyAvgSpend}
       monthLabels={buildMonthLabels(projection.points.length)}
       hasSpendingData={hasSpendingData}
