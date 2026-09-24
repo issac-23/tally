@@ -16,6 +16,11 @@ import { projectSavings } from "@/lib/utils/projection";
 import { monthlyBurnRate, spendingSummary } from "@/lib/utils/spending";
 import { commitmentBreakdown } from "@/lib/utils/commitments";
 import {
+  incomeByMonth,
+  monthlyIncome,
+  type IncomeSource,
+} from "@/lib/utils/income";
+import {
   groupByCategory,
   groupByMerchant,
   comparePeriods,
@@ -33,7 +38,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("savings_balance, monthly_salary, onboarded")
+    .select("savings_balance, onboarded")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -48,7 +53,16 @@ export default async function DashboardPage() {
     "there";
 
   const savings = Number(profile.savings_balance);
-  const salary = Number(profile.monthly_salary);
+
+  // Every source, not just the ones paying right now — a raise that starts
+  // in three months still belongs in the projection.
+  const { data: incomeData } = await supabase
+    .from("income_sources")
+    .select("id, name, amount, recurrence, starts_on, ends_on")
+    .order("created_at", { ascending: true });
+
+  const incomeSources = (incomeData ?? []) as unknown as IncomeSource[];
+  const income = monthlyIncome(incomeSources);
 
   // Pull last 30 days of transactions to compute the runway baseline.
   const { data: recentTransactions } = await supabase
@@ -87,10 +101,10 @@ export default async function DashboardPage() {
   // needs-data state rather than reporting "infinite runway" as good news.
   const hasSpendingData = txs.length > 0 || recurring.length > 0;
   const burnRate = monthlyBurnRate(txs, recurring);
-  const runway = calculateRunway(savings, salary, burnRate);
-  const projection = projectSavings(savings, salary, burnRate);
+  const runway = calculateRunway(savings, income, burnRate);
+  const projection = projectSavings(savings, incomeByMonth(incomeSources, 12), burnRate);
   const summary = spendingSummary(txs);
-  const commitments = commitmentBreakdown(recurring, salary);
+  const commitments = commitmentBreakdown(recurring, income);
 
   // Latest 5 transactions with category info, for the "Recent" section.
   // Supabase types the joined `category` as an array, but with a single FK it's
@@ -167,7 +181,7 @@ export default async function DashboardPage() {
             <SavingsProjectionSection
               projection={projection}
               savings={savings}
-              monthlySalary={salary}
+              monthlySalary={income}
               monthlyAvgSpend={burnRate}
               hasSpendingData={hasSpendingData}
             />
