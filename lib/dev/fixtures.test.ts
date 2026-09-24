@@ -192,6 +192,35 @@ describe("createFixtureClient", () => {
     expect(error).toBeNull();
   });
 
+  it("seeds an income source matching the scenario's salary", async () => {
+    const supabase = createFixtureClient({ scenario: "full" });
+    const { data } = await supabase
+      .from("income_sources")
+      .select("id, name, amount, recurrence");
+    expect(data).toEqual([
+      expect.objectContaining({ name: "Salary", amount: 4200, recurrence: "monthly" }),
+    ]);
+  });
+
+  it("writes and removes income sources", async () => {
+    const supabase = createFixtureClient({ scenario: "empty" });
+    await supabase
+      .from("income_sources")
+      .insert({ name: "Freelance", amount: 900, recurrence: "monthly", ends_on: "2027-06-30" });
+
+    const { data: after } = await supabase.from("income_sources").select("id, name, ends_on");
+    const rows = after as Array<{ id: string; name: string; ends_on: string | null }>;
+    expect(rows.map((r) => r.name).sort()).toEqual(["Freelance", "Salary"]);
+    expect(rows.find((r) => r.name === "Freelance")?.ends_on).toBe("2027-06-30");
+
+    const freelanceId = rows.find((r) => r.name === "Freelance")!.id;
+    const { error } = await supabase.from("income_sources").delete().eq("id", freelanceId);
+    expect(error).toBeNull();
+
+    const { data: left } = await supabase.from("income_sources").select("name");
+    expect((left as Array<{ name: string }>).map((r) => r.name)).toEqual(["Salary"]);
+  });
+
   it("throws on an unknown table rather than reporting no rows", async () => {
     const supabase = createFixtureClient({ scenario: "full" });
     await expect(supabase.from("budgets").select("id")).rejects.toThrow(
