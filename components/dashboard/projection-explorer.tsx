@@ -15,7 +15,14 @@ import {
 
 interface ProjectionExplorerProps {
   savings: number;
-  monthlySalary: number;
+  /** This month's income. Drives the slider range and the copy. */
+  monthlyIncome: number;
+  /**
+   * Income for each month of the window. The projection walks this, so a
+   * contract ending in month 4 bends the line — which the flat figure
+   * above can't express.
+   */
+  incomeSchedule: number[];
   /** The real burn rate. The slider starts here and resets back to it. */
   monthlyAvgSpend: number;
   /** Pre-computed month labels, server-rendered so first paint is stable. */
@@ -33,7 +40,8 @@ interface ProjectionExplorerProps {
  */
 export function ProjectionExplorer({
   savings,
-  monthlySalary,
+  monthlyIncome,
+  incomeSchedule,
   monthlyAvgSpend,
   monthLabels,
   hasSpendingData,
@@ -41,8 +49,8 @@ export function ProjectionExplorer({
   const [spend, setSpend] = useState(monthlyAvgSpend);
 
   const ceiling = useMemo(
-    () => sliderCeiling(monthlyAvgSpend, monthlySalary),
-    [monthlyAvgSpend, monthlySalary]
+    () => sliderCeiling(monthlyAvgSpend, monthlyIncome),
+    [monthlyAvgSpend, monthlyIncome]
   );
   const step = useMemo(() => sliderStep(ceiling), [ceiling]);
 
@@ -50,14 +58,14 @@ export function ProjectionExplorer({
   // ghost line don't flicker on a rounding artefact.
   const isExploring = Math.abs(spend - monthlyAvgSpend) > step / 2;
 
-  const baseRunway = calculateRunway(savings, monthlySalary, monthlyAvgSpend);
-  const baseProjection = projectSavings(savings, monthlySalary, monthlyAvgSpend);
+  const baseRunway = calculateRunway(savings, monthlyIncome, monthlyAvgSpend);
+  const baseProjection = projectSavings(savings, incomeSchedule, monthlyAvgSpend);
 
   const runway = isExploring
-    ? calculateRunway(savings, monthlySalary, spend)
+    ? calculateRunway(savings, monthlyIncome, spend)
     : baseRunway;
   const projection = isExploring
-    ? projectSavings(savings, monthlySalary, spend)
+    ? projectSavings(savings, incomeSchedule, spend)
     : baseProjection;
 
   const delta = runwayDelta(
@@ -84,18 +92,18 @@ export function ProjectionExplorer({
       <p className="mb-4 text-xs text-[var(--color-foreground-muted)]">
         {isExploring ? (
           <>
-            Hypothetical: {formatCurrency(monthlySalary)}/mo income and{" "}
+            Hypothetical: {formatCurrency(monthlyIncome)}/mo income and{" "}
             {formatCurrency(spend)}/mo spending. The faint line is where you
             actually stand.
           </>
         ) : hasSpendingData ? (
           <>
-            Based on {formatCurrency(monthlySalary)}/mo income and{" "}
+            Based on {formatCurrency(monthlyIncome)}/mo income and{" "}
             {formatCurrency(monthlyAvgSpend)}/mo average spending.
           </>
         ) : (
           <>
-            Assumes {formatCurrency(monthlySalary)}/mo income and no spending
+            Assumes {formatCurrency(monthlyIncome)}/mo income and no spending
             yet — log expenses to see a real curve.
           </>
         )}
@@ -254,6 +262,16 @@ function Caption({ projection }: { projection: SavingsProjection }) {
     return (
       <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-status-red)]">
         Depletes in ~{months} months
+      </span>
+    );
+  }
+  // Not just this month's net: income that stops partway through the window
+  // can leave you saving today and lower in a year, and the badge shouldn't
+  // contradict a line that visibly turns down.
+  if (projection.isDepleting) {
+    return (
+      <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-status-orange)]">
+        Savings fall later on
       </span>
     );
   }

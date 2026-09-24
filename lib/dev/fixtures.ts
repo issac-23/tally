@@ -49,6 +49,7 @@ export type Scenario =
   | "critical"
   | "recurring"
   | "overcommitted"
+  | "contractending"
   | "long"
   | "error"
   | "boom"
@@ -61,6 +62,7 @@ export const SCENARIOS: readonly Scenario[] = [
   "critical", // days of runway left
   "recurring", // exercises the standing-commitment maths
   "overcommitted", // standing commitments cost more than the income
+  "contractending", // a second income stops partway through the projection
   "long", // long names and large amounts, for layout
   "error", // every write fails
   "boom", // every read throws — for the error boundaries
@@ -93,10 +95,22 @@ interface TransactionRow {
   created_at: string;
 }
 
+interface IncomeSourceRow {
+  id: string;
+  user_id: string;
+  name: string;
+  amount: number;
+  recurrence: string;
+  starts_on: string | null;
+  ends_on: string | null;
+  created_at: string;
+}
+
+// No monthly_salary: the app reads income from income_sources now, and a
+// fixture that still served it would hide a query nobody makes.
 interface ProfileRow {
   id: string;
   savings_balance: number;
-  monthly_salary: number;
   onboarded: boolean;
 }
 
@@ -104,6 +118,7 @@ interface Store {
   profile: ProfileRow;
   categories: CategoryRow[];
   transactions: TransactionRow[];
+  incomeSources: IncomeSourceRow[];
 }
 
 // ---------------------------------------------------------------- seed data
@@ -196,28 +211,55 @@ function oneOffHistory(seed: number, scale = 1): TransactionRow[] {
   return rows;
 }
 
+let incomeSequence = 0;
+
+/** A salary, unless a scenario says otherwise. */
+function salary(amount: number, name = "Salary"): IncomeSourceRow {
+  return {
+    id: `fx-inc-${++incomeSequence}`,
+    user_id: USER_ID,
+    name,
+    amount,
+    recurrence: "monthly",
+    starts_on: null,
+    ends_on: null,
+    created_at: isoDaysAgo(120),
+  };
+}
+
+/** A date `months` from now, on the last day of that month. */
+function monthEndFromNow(months: number): string {
+  const d = new Date();
+  const end = new Date(d.getFullYear(), d.getMonth() + months + 1, 0);
+  const m = String(end.getMonth() + 1).padStart(2, "0");
+  return `${end.getFullYear()}-${m}-${String(end.getDate()).padStart(2, "0")}`;
+}
+
 function buildStore(scenario: Scenario): Store {
   const categories = presetCategories();
 
   switch (scenario) {
     case "empty":
       return {
-        profile: { id: USER_ID, savings_balance: 12000, monthly_salary: 3800, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 12000, onboarded: true },
         categories,
+        incomeSources: [salary(3800)],
         transactions: [],
       };
 
     case "new":
       return {
-        profile: { id: USER_ID, savings_balance: 0, monthly_salary: 0, onboarded: false },
+        profile: { id: USER_ID, savings_balance: 0, onboarded: false },
         categories,
+        incomeSources: [],
         transactions: [],
       };
 
     case "critical":
       return {
-        profile: { id: USER_ID, savings_balance: 900, monthly_salary: 1200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 900, onboarded: true },
         categories,
+        incomeSources: [salary(1200)],
         transactions: oneOffHistory(7, 2.2),
       };
 
@@ -234,8 +276,9 @@ function buildStore(scenario: Scenario): Store {
       rows.push(makeTransaction(3, 62, "MBTA", "cat-transport", "weekly", "Commuter pass"));
       rows.push(...oneOffHistory(11));
       return {
-        profile: { id: USER_ID, savings_balance: 18400, monthly_salary: 4200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 18400, onboarded: true },
         categories,
+        incomeSources: [salary(4200)],
         transactions: rows,
       };
     }
@@ -252,9 +295,26 @@ function buildStore(scenario: Scenario): Store {
         ...oneOffHistory(6),
       ];
       return {
-        profile: { id: USER_ID, savings_balance: 5200, monthly_salary: 2200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 5200, onboarded: true },
         categories,
+        incomeSources: [salary(2200)],
         transactions: rows,
+      };
+    }
+
+    // A retainer that stops in four months. Until then the balance holds;
+    // after it, the projection should bend and start draining.
+    case "contractending": {
+      const retainer = salary(2600, "Acme retainer");
+      retainer.ends_on = monthEndFromNow(3);
+      return {
+        profile: { id: USER_ID, savings_balance: 14000, onboarded: true },
+        categories,
+        incomeSources: [salary(1800), retainer],
+        transactions: [
+          makeTransaction(6, 1850, "Greystar Rent", "cat-housing", "monthly", "Rent"),
+          ...oneOffHistory(9),
+        ],
       };
     }
 
@@ -281,8 +341,9 @@ function buildStore(scenario: Scenario): Store {
         makeTransaction(1, 0.01, null, null)
       );
       return {
-        profile: { id: USER_ID, savings_balance: 250000, monthly_salary: 9800, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 250000, onboarded: true },
         categories,
+        incomeSources: [salary(9800)],
         transactions: rows,
       };
     }
@@ -304,8 +365,9 @@ function buildStore(scenario: Scenario): Store {
       rows.push(makeTransaction(2, 1850, "Greystar Rent", "cat-housing", "monthly", "Rent"));
       rows.push(makeTransaction(4, 15.99, "Netflix", "cat-fun", "monthly"));
       return {
-        profile: { id: USER_ID, savings_balance: 18400, monthly_salary: 4200, onboarded: true },
+        profile: { id: USER_ID, savings_balance: 18400, onboarded: true },
         categories,
+        incomeSources: [salary(4200)],
         transactions: rows,
       };
     }
@@ -521,6 +583,8 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
         return this.runCategories();
       case "transactions":
         return this.runTransactions();
+      case "income_sources":
+        return this.runIncomeSources();
       default:
         throw new Error(
           `[tally fixtures] no fixture data for table "${this.table}". ` +
@@ -644,6 +708,47 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
       });
 
     return { data: this.sortAndSlice(rows), error: null };
+  }
+
+  private runIncomeSources(): { data: unknown; error: unknown } {
+    if (this.mode === "insert") {
+      const payload = this.payload as Row;
+      this.store.incomeSources.push({
+        id: `fx-inc-${Date.now()}`,
+        user_id: USER_ID,
+        name: String(payload.name),
+        amount: Number(payload.amount),
+        recurrence: String(payload.recurrence ?? "monthly"),
+        starts_on: (payload.starts_on as string) ?? null,
+        ends_on: (payload.ends_on as string) ?? null,
+        created_at: new Date().toISOString(),
+      });
+      return { data: null, error: null };
+    }
+
+    if (this.mode === "update") {
+      const touched = this.store.incomeSources.filter((row) =>
+        this.matches(row as unknown as Row)
+      );
+      for (const row of touched) Object.assign(row, this.payload);
+      return { data: touched.map((row) => ({ ...row })), error: null };
+    }
+
+    if (this.mode === "delete") {
+      const before = this.store.incomeSources.length;
+      this.store.incomeSources = this.store.incomeSources.filter(
+        (row) => !this.matches(row as unknown as Row)
+      );
+      if (before === this.store.incomeSources.length) {
+        return { data: null, error: { message: "No row matched", code: "PGRST116" } };
+      }
+      return { data: null, error: null };
+    }
+
+    const rows = this.store.incomeSources.filter((row) =>
+      this.matches(row as unknown as Row)
+    );
+    return { data: this.sortAndSlice(rows as unknown as Row[]), error: null };
   }
 
   /** Supabase applies .order() calls in sequence; replicate as a multi-key sort. */

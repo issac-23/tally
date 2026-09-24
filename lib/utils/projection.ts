@@ -1,6 +1,8 @@
 /**
- * Forward projection of savings balance based on current state plus assumed
- * constant net monthly cash flow (salary minus average spending).
+ * Forward projection of savings balance from the current balance plus net
+ * monthly cash flow (income minus average spending). Income can vary month
+ * to month; spending is assumed flat, because a 30-day average is all we
+ * have to go on.
  *
  * No history reconstruction — we only have a snapshot of the current balance,
  * not a time series, so projecting forward is the only honest direction.
@@ -20,9 +22,14 @@ export interface SavingsProjection {
    * Null when not depleting, or when depletion falls beyond the window.
    */
   depletionMonth: number | null;
-  /** Net flow is negative (spending exceeds income). */
+  /**
+   * Savings are heading down: either they run out inside the window, or
+   * the balance ends it lower than it starts. With flat income that's just
+   * "net flow is negative"; with income that stops partway it's the only
+   * honest reading.
+   */
   isDepleting: boolean;
-  /** Monthly cash flow: salary - avg spend. */
+  /** Cash flow in the current month: income - avg spend. */
   monthlyNet: number;
 }
 
@@ -30,31 +37,54 @@ const DEFAULT_PROJECTION_MONTHS = 12;
 
 export function projectSavings(
   currentSavings: number,
-  monthlySalary: number,
+  /**
+   * A flat monthly figure, or one entry per month when income changes
+   * partway through — a contract ending, a raise starting. Short arrays
+   * hold their last value for the rest of the window.
+   */
+  monthlyIncome: number | number[],
   monthlyAvgSpend: number,
   months: number = DEFAULT_PROJECTION_MONTHS
 ): SavingsProjection {
-  const monthlyNet = monthlySalary - monthlyAvgSpend;
-  const isDepleting = monthlyNet < 0;
+  const incomeIn = (month: number): number => {
+    if (!Array.isArray(monthlyIncome)) return monthlyIncome;
+    if (monthlyIncome.length === 0) return 0;
+    return monthlyIncome[Math.min(month, monthlyIncome.length - 1)];
+  };
 
-  // Build month-by-month points, flooring at zero so the line doesn't dip
-  // below the axis after depletion.
-  const points: ProjectionPoint[] = [];
-  for (let m = 0; m <= months; m++) {
-    const raw = currentSavings + monthlyNet * m;
-    points.push({ month: m, balance: Math.max(0, raw) });
+  // Walk the balance forward a month at a time rather than multiplying one
+  // net figure, so a change in income bends the line instead of tilting all
+  // of it. Floored at zero so it doesn't dip below the axis after depletion.
+  const points: ProjectionPoint[] = [{ month: 0, balance: Math.max(0, currentSavings) }];
+  let balance = currentSavings;
+  let depletionMonth: number | null = null;
+
+  for (let m = 1; m <= months; m++) {
+    const net = incomeIn(m - 1) - monthlyAvgSpend;
+    const next = balance + net;
+
+    // Catch the crossing inside the month it happens, and interpolate to
+    // the fractional month rather than rounding to the boundary.
+    if (depletionMonth === null && balance > 0 && next <= 0 && net < 0) {
+      depletionMonth = m - 1 + balance / -net;
+    }
+
+    balance = next;
+    points.push({ month: m, balance: Math.max(0, balance) });
   }
 
-  // Compute exact depletion month (float) if it falls within the window.
-  let depletionMonth: number | null = null;
-  if (isDepleting && currentSavings > 0) {
-    const exact = currentSavings / -monthlyNet;
-    if (exact <= months) {
-      depletionMonth = exact;
-    }
-  } else if (currentSavings <= 0 && isDepleting) {
+  const monthlyNet = incomeIn(0) - monthlyAvgSpend;
+  // Already at or below zero and still losing money: it's gone now, not in
+  // some fractional month's time.
+  if (depletionMonth === null && currentSavings <= 0 && monthlyNet < 0) {
     depletionMonth = 0;
   }
 
-  return { points, depletionMonth, isDepleting, monthlyNet };
+  return {
+    points,
+    depletionMonth,
+    isDepleting:
+      depletionMonth !== null || monthlyNet < 0 || balance < currentSavings,
+    monthlyNet,
+  };
 }
