@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isActiveIn, monthlyIncome, sourceMonthlyAmount } from "./income";
+import {
+  incomeByMonth,
+  isActiveIn,
+  monthlyIncome,
+  sourceMonthlyAmount,
+} from "./income";
 
 function source(overrides: Record<string, unknown> = {}) {
   return {
@@ -88,5 +93,36 @@ describe("monthlyIncome with dates", () => {
     ];
     expect(monthlyIncome(sources, new Date(2027, 1, 10))).toBeCloseTo(5000, 6);
     expect(monthlyIncome(sources, new Date(2027, 2, 10))).toBeCloseTo(3000, 6);
+  });
+});
+
+describe("incomeByMonth", () => {
+  it("returns months + 1 entries, starting with this month", () => {
+    const schedule = incomeByMonth([source()], 3, new Date(2027, 0, 15));
+    expect(schedule).toHaveLength(4);
+    expect(schedule.every((n) => Math.abs(n - 4200) < 1e-6)).toBe(true);
+  });
+
+  it("drops a source partway through the window", () => {
+    const sources = [
+      source({ id: "a", amount: 3000 }),
+      source({ id: "b", amount: 2000, ends_on: "2027-03-31" }),
+    ];
+    // Jan, Feb, Mar have both. April onwards has one.
+    const schedule = incomeByMonth(sources, 4, new Date(2027, 0, 15));
+    expect(schedule.map((n) => Math.round(n))).toEqual([5000, 5000, 5000, 3000, 3000]);
+  });
+
+  it("picks a source up partway through the window", () => {
+    const sources = [source({ id: "b", amount: 2000, starts_on: "2027-03-01" })];
+    const schedule = incomeByMonth(sources, 3, new Date(2027, 0, 15));
+    expect(schedule.map((n) => Math.round(n))).toEqual([0, 0, 2000, 2000]);
+  });
+
+  it("doesn't skip a month when starting from the 31st", () => {
+    // new Date(2027, 2, 31) + 1 month naively lands on 1 May, losing April.
+    const sources = [source({ id: "b", amount: 2000, starts_on: "2027-04-01" })];
+    const schedule = incomeByMonth(sources, 2, new Date(2027, 2, 31));
+    expect(schedule.map((n) => Math.round(n))).toEqual([0, 2000, 2000]);
   });
 });
