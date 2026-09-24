@@ -9,24 +9,17 @@ const SAVED_BADGE_TIMEOUT_MS = 2500;
 
 interface SettingsFormProps {
   initialSavings: number;
-  initialSalary: number;
 }
 
-export function SettingsForm({
-  initialSavings,
-  initialSalary,
-}: SettingsFormProps) {
+export function SettingsForm({ initialSavings }: SettingsFormProps) {
   const [savings, setSavings] = useState<number | string>(initialSavings);
-  const [salary, setSalary] = useState<number | string>(initialSalary);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const { ref: shakeRef, shake } = useErrorShake<HTMLButtonElement>();
 
   // Detect dirty state so the Save button feels purposeful.
-  const isDirty =
-    Number(savings) !== initialSavings ||
-    Number(salary) !== initialSalary;
+  const isDirty = Number(savings) !== initialSavings;
 
   // Auto-clear the "Saved" confirmation so it doesn't linger.
   useEffect(() => {
@@ -40,7 +33,7 @@ export function SettingsForm({
     setError(null);
     setSubmitting(true);
 
-    const result = await updateProfile(Number(savings), Number(salary));
+    const result = await updateProfile(Number(savings));
 
     if (result.error) {
       setError(result.error);
@@ -58,18 +51,13 @@ export function SettingsForm({
         value={savings}
         onChange={setSavings}
       />
-      <Field
-        label="Monthly salary (after taxes)"
-        value={salary}
-        onChange={setSalary}
-      />
 
       <div className="t-input-wrap space-y-3">
         <div className="flex items-center justify-between gap-3">
           <button
             ref={shakeRef}
             type="submit"
-            disabled={submitting || !isDirty || savings === "" || salary === ""}
+            disabled={submitting || !isDirty || savings === ""}
             className="btn-primary t-input px-4 py-2.5 text-sm"
           >
             {submitting ? "Saving..." : "Save changes"}

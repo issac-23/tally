@@ -5,17 +5,11 @@
  * The DB has CHECK constraints as a backstop, but catching it here gives
  * a friendlier message than a raw Postgres error.
  */
-export function validateProfileInput(
-  savingsBalance: number,
-  monthlySalary: number
-): string | null {
-  if (
-    !Number.isFinite(savingsBalance) ||
-    !Number.isFinite(monthlySalary)
-  ) {
+export function validateProfileInput(savingsBalance: number): string | null {
+  if (!Number.isFinite(savingsBalance)) {
     return "Please enter valid numbers.";
   }
-  if (savingsBalance < 0 || monthlySalary < 0) {
+  if (savingsBalance < 0) {
     return "Amounts can't be negative.";
   }
   return null;

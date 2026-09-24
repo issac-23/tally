@@ -92,3 +92,65 @@ describe("projectSavings", () => {
     expect(projectSavings(1000, 500, 500).monthlyNet).toBe(0);
   });
 });
+
+describe("projectSavings with income that changes", () => {
+  it("matches the flat number when every month is the same", () => {
+    const flat = projectSavings(10000, 2000, 2500);
+    const schedule = projectSavings(10000, Array(13).fill(2000), 2500);
+    expect(schedule.points).toEqual(flat.points);
+    expect(schedule.depletionMonth).toBe(flat.depletionMonth);
+  });
+
+  it("bends the line when a contract ends", () => {
+    // 3 months at break-even, then income halves and it starts draining.
+    const income = [3000, 3000, 3000, 1000, 1000, 1000, 1000, 1000];
+    const result = projectSavings(4000, income, 3000);
+    expect(result.points[3].balance).toBe(4000);
+    expect(result.points[4].balance).toBe(2000);
+    expect(result.points[5].balance).toBe(0);
+  });
+
+  it("finds the crossing in the month it actually happens", () => {
+    const income = [3000, 3000, 1000, 1000, 1000, 1000, 1000, 1000];
+    const result = projectSavings(3000, income, 3000);
+    // Flat until month 2, then -2000/mo against 3000 saved.
+    expect(result.depletionMonth).toBeCloseTo(3.5, 6);
+    expect(result.isDepleting).toBe(true);
+  });
+
+  it("reports not depleting when income arrives before the money runs out", () => {
+    const income = [0, 0, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000];
+    const result = projectSavings(10000, income, 3000);
+    expect(result.depletionMonth).toBeNull();
+    expect(result.points[12].balance).toBeGreaterThan(10000);
+  });
+
+  it("holds the last value when the schedule is shorter than the window", () => {
+    const result = projectSavings(10000, [2000, 1000], 1000);
+    // Month 1 uses 2000, everything after uses 1000 — so break-even.
+    expect(result.points[1].balance).toBe(11000);
+    expect(result.points[12].balance).toBe(11000);
+  });
+
+  it("treats an empty schedule as no income at all", () => {
+    const result = projectSavings(1200, [], 100);
+    expect(result.depletionMonth).toBeCloseTo(12, 6);
+  });
+});
+
+describe("isDepleting with income that stops", () => {
+  it("is true when today's net is positive but the window ends lower", () => {
+    // Saving for four months, then the retainer stops and it drains.
+    const income = [4400, 4400, 4400, 4400, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800, 1800];
+    const result = projectSavings(14000, income, 3016);
+    expect(result.monthlyNet).toBeGreaterThan(0);
+    expect(result.depletionMonth).toBeNull();
+    expect(result.isDepleting).toBe(true);
+  });
+
+  it("stays false when the window ends higher", () => {
+    const income = [4400, 4400, 4400, 4400, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200, 3200];
+    const result = projectSavings(14000, income, 3016);
+    expect(result.isDepleting).toBe(false);
+  });
+});

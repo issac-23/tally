@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { validateProfileInput } from "@/lib/utils/profile";
+import { validateIncomeInput, type IncomeInput } from "@/lib/utils/income";
 
 export interface UpdateProfileResult {
   error?: string;
@@ -19,10 +20,9 @@ export interface DeleteCategoryResult {
 }
 
 export async function updateProfile(
-  savingsBalance: number,
-  monthlySalary: number
+  savingsBalance: number
 ): Promise<UpdateProfileResult> {
-  const validationError = validateProfileInput(savingsBalance, monthlySalary);
+  const validationError = validateProfileInput(savingsBalance);
   if (validationError) {
     return { error: validationError };
   }
@@ -40,10 +40,7 @@ export async function updateProfile(
   // user has clearly already gone through onboarding to reach Settings.
   const { error } = await supabase
     .from("profiles")
-    .update({
-      savings_balance: savingsBalance,
-      monthly_salary: monthlySalary,
-    })
+    .update({ savings_balance: savingsBalance })
     .eq("id", user.id);
 
   if (error) {
@@ -143,4 +140,71 @@ export async function deleteCategory(
   revalidatePath("/dashboard");
   revalidatePath("/transactions");
   return {};
+}
+
+export interface IncomeSourceResult {
+  error?: string;
+  success?: boolean;
+}
+
+export async function createIncomeSource(
+  input: IncomeInput
+): Promise<IncomeSourceResult> {
+  const validated = validateIncomeInput(input);
+  if (!validated.ok) {
+    return { error: validated.error };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You're not signed in." };
+  }
+
+  const { error } = await supabase
+    .from("income_sources")
+    .insert({ user_id: user.id, ...validated.fields });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/settings");
+  return { success: true };
+}
+
+export async function deleteIncomeSource(
+  id: string
+): Promise<IncomeSourceResult> {
+  if (!id) {
+    return { error: "Missing income source id." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You're not signed in." };
+  }
+
+  // RLS is the real boundary; the explicit user_id filter states the intent.
+  const { error } = await supabase
+    .from("income_sources")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/settings");
+  return { success: true };
 }
