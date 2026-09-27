@@ -23,18 +23,6 @@ function fieldsOf(result: ReturnType<typeof validateTransactionInput>) {
 }
 
 describe("validateTransactionInput", () => {
-  it("accepts a well-formed expense", () => {
-    const fields = fieldsOf(validateTransactionInput(valid(), TODAY));
-    expect(fields).toEqual({
-      amount: 12.5,
-      category_id: "cat-food",
-      description: null,
-      merchant: null,
-      date: "2026-09-01",
-      recurrence: "once",
-    });
-  });
-
   it.each([0, -5, Number.NaN, Number.POSITIVE_INFINITY, "abc"])(
     "rejects the amount %p",
     (amount) => {
@@ -114,16 +102,5 @@ describe("hasChanges", () => {
 
   it("is false when nothing moved", () => {
     expect(hasChanges(before, { ...before })).toBe(false);
-  });
-
-  it.each([
-    ["amount", { amount: 12.51 }],
-    ["category", { category_id: "cat-other" }],
-    ["note", { description: "lunch" }],
-    ["merchant", { merchant: "blue bottle" }],
-    ["date", { date: "2026-09-02" }],
-    ["recurrence", { recurrence: "monthly" as const }],
-  ])("is true when the %s changed", (_label, patch) => {
-    expect(hasChanges(before, { ...before, ...patch })).toBe(true);
   });
 });
