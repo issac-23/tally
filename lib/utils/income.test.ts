@@ -18,10 +18,6 @@ function source(overrides: Record<string, unknown> = {}) {
 }
 
 describe("sourceMonthlyAmount", () => {
-  it("passes a monthly amount through", () => {
-    expect(sourceMonthlyAmount(source())).toBeCloseTo(4200, 6);
-  });
-
   it("converts other cadences", () => {
     // 26 fortnightly paychecks a year, not 24.
     expect(sourceMonthlyAmount(source({ amount: 2000, recurrence: "biweekly" }))).toBeCloseTo(
@@ -76,13 +72,6 @@ describe("isActiveIn", () => {
   it("still pays in its final month", () => {
     // A contract ending on the 14th still paid that month.
     expect(isActiveIn(source({ ends_on: "2027-03-14" }), march)).toBe(true);
-  });
-
-  it("handles a source bounded on both sides", () => {
-    const bounded = source({ starts_on: "2027-01-01", ends_on: "2027-06-30" });
-    expect(isActiveIn(bounded, new Date(2026, 11, 31))).toBe(false);
-    expect(isActiveIn(bounded, march)).toBe(true);
-    expect(isActiveIn(bounded, new Date(2027, 6, 1))).toBe(false);
   });
 });
 

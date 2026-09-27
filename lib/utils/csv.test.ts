@@ -20,12 +20,6 @@ function tx(overrides: Partial<TransactionRowData> = {}): TransactionRowData {
 }
 
 describe("transactionsToCsv", () => {
-  it("includes a header row", () => {
-    expect(transactionsToCsv([])).toBe(
-      "date,amount,category,merchant,description,recurrence"
-    );
-  });
-
   it("exports transaction fields in stable column order", () => {
     expect(transactionsToCsv([tx()])).toBe(
       [

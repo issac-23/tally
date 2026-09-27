@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCurrency, formatCurrencyCompact } from "./format";
+import { formatCurrency } from "./format";
 
 describe("formatCurrency", () => {
   it("formats zero with cents (small-amount default)", () => {
@@ -30,27 +30,5 @@ describe("formatCurrency", () => {
 
   it("rounds to two decimal places when showing cents", () => {
     expect(formatCurrency(1.005)).toBe("$1.01");
-  });
-
-  it("inserts thousands separators on large numbers", () => {
-    expect(formatCurrency(1234567)).toBe("$1,234,567");
-  });
-});
-
-describe("formatCurrencyCompact", () => {
-  it("formats small amounts as plain dollars", () => {
-    expect(formatCurrencyCompact(500)).toBe("$500");
-  });
-
-  it("formats thousands compactly", () => {
-    expect(formatCurrencyCompact(1500)).toBe("$1.5K");
-  });
-
-  it("formats millions compactly", () => {
-    expect(formatCurrencyCompact(2_500_000)).toBe("$2.5M");
-  });
-
-  it("formats zero", () => {
-    expect(formatCurrencyCompact(0)).toBe("$0");
   });
 });

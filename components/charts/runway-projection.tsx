@@ -73,6 +73,10 @@ export function RunwayProjection({
             dataKey="month"
             tickFormatter={(m: number) => monthLabels[m] ?? ""}
             stroke="var(--color-foreground-subtle)"
+            // A 30-day window has more points than the axis has room for, so
+            // let recharts drop the labels that would collide.
+            interval="preserveStartEnd"
+            minTickGap={24}
             tick={{ fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: "var(--color-border)" }}
@@ -118,10 +122,11 @@ export function RunwayProjection({
             stroke="var(--color-border-strong)"
             strokeDasharray="2 4"
           />
-          {/* Depletion marker — only when we hit zero in the window */}
-          {projection.depletionMonth !== null && (
+          {/* Depletion marker — only when we hit zero in the window. Plotted
+              against the point index, which is the axis, not the month. */}
+          {projection.depletionIndex !== null && (
             <ReferenceDot
-              x={projection.depletionMonth}
+              x={projection.depletionIndex}
               y={0}
               r={5}
               fill="var(--color-status-red)"

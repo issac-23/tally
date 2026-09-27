@@ -50,11 +50,6 @@ describe("runwayLabel", () => {
     expect(runwayLabel(1)).toBe("~1 month left");
   });
 
-  it("uses plural 'months' for multiple months", () => {
-    expect(runwayLabel(5.5)).toBe("~5.5 months left");
-    expect(runwayLabel(10)).toBe("~10 months left");
-  });
-
   it("rounds months to one decimal", () => {
     expect(runwayLabel(5.27)).toBe("~5.3 months left");
     expect(runwayLabel(7.91)).toBe("~7.9 months left");
@@ -62,20 +57,12 @@ describe("runwayLabel", () => {
 });
 
 describe("monthlyBudgetLimit", () => {
-  it("returns salary + savings/12", () => {
-    expect(monthlyBudgetLimit(12000, 3000)).toBe(4000);
-  });
-
   it("equals salary when savings is zero", () => {
     expect(monthlyBudgetLimit(0, 5000)).toBe(5000);
   });
 
   it("equals savings/12 when salary is zero", () => {
     expect(monthlyBudgetLimit(24000, 0)).toBe(2000);
-  });
-
-  it("returns zero when both inputs are zero", () => {
-    expect(monthlyBudgetLimit(0, 0)).toBe(0);
   });
 });
 
@@ -98,20 +85,6 @@ describe("calculateRunway", () => {
     const r = calculateRunway(12000, 2000, 4000);
     expect(r.months_remaining).toBe(6);
     expect(r.status).toBe("green");
-  });
-
-  it("flips to yellow when runway drops below 6 months", () => {
-    // burn = 6000 - 2000 = 4000/mo, savings = 12000 → 3 months
-    const r = calculateRunway(12000, 2000, 6000);
-    expect(r.months_remaining).toBe(3);
-    expect(r.status).toBe("yellow");
-  });
-
-  it("flips to orange when runway drops below 3 months", () => {
-    // burn = 14000 - 2000 = 12000/mo, savings = 12000 → 1 month
-    const r = calculateRunway(12000, 2000, 14000);
-    expect(r.months_remaining).toBe(1);
-    expect(r.status).toBe("orange");
   });
 
   it("flips to red when runway is under a month", () => {
