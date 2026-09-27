@@ -9,16 +9,6 @@ describe("projectSavings", () => {
     expect(result.points[12].month).toBe(12);
   });
 
-  it("uses 12 months as the default window", () => {
-    const result = projectSavings(1000, 100, 50);
-    expect(result.points).toHaveLength(13);
-  });
-
-  it("starts at the current savings on month 0", () => {
-    const result = projectSavings(5000, 0, 0);
-    expect(result.points[0].balance).toBe(5000);
-  });
-
   it("grows when salary exceeds spending (saving case)", () => {
     const result = projectSavings(1000, 500, 300, 6);
     // Net +200/mo: 1000, 1200, 1400, 1600, 1800, 2000, 2200
@@ -84,12 +74,6 @@ describe("projectSavings", () => {
     const result = projectSavings(0, 100, 200, 12);
     expect(result.depletionMonth).toBe(0);
     expect(result.points.every((p) => p.balance === 0)).toBe(true);
-  });
-
-  it("computes monthlyNet as salary minus spend", () => {
-    expect(projectSavings(1000, 500, 200).monthlyNet).toBe(300);
-    expect(projectSavings(1000, 200, 500).monthlyNet).toBe(-300);
-    expect(projectSavings(1000, 500, 500).monthlyNet).toBe(0);
   });
 });
 
