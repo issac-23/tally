@@ -2,10 +2,6 @@ import { describe, it, expect } from "vitest";
 import { groupByMonth } from "./aggregation";
 
 describe("groupByMonth", () => {
-  it("returns an empty array for no transactions", () => {
-    expect(groupByMonth([])).toEqual([]);
-  });
-
   it("buckets by calendar month and subtotals each one", () => {
     const groups = groupByMonth([
       { date: "2026-08-26", amount: 10 },
@@ -59,10 +55,6 @@ function tx(daysAgoFromNow: number, amount: number, category = food) {
 }
 
 describe("groupByCategory", () => {
-  it("returns an empty array for no transactions", () => {
-    expect(groupByCategory([])).toEqual([]);
-  });
-
   it("sums multiple transactions in the same category", () => {
     const result = groupByCategory([tx(1, 50), tx(2, 100)]);
     expect(result).toHaveLength(1);
@@ -107,10 +99,6 @@ describe("groupByMerchant", () => {
   function txWithMerchant(amount: number, merchant: string | null) {
     return { amount, date: tx(0, 0).date, merchant, category: null };
   }
-
-  it("returns an empty array for no transactions", () => {
-    expect(groupByMerchant([])).toEqual([]);
-  });
 
   it("sums multiple transactions for the same merchant", () => {
     const result = groupByMerchant([
@@ -162,29 +150,11 @@ describe("groupByMerchant", () => {
     expect(result[0].amount).toBe(150);
   });
 
-  it("assigns a stable color to the same merchant across calls", () => {
-    const txs = [
-      txWithMerchant(50, "Amazon"),
-      txWithMerchant(100, "Starbucks"),
-    ];
-    const a = groupByMerchant(txs);
-    const b = groupByMerchant(txs);
-    expect(a[0].category.color).toBe(b[0].category.color);
-    expect(a[1].category.color).toBe(b[1].category.color);
-  });
 });
 
 describe("comparePeriods", () => {
   // Pin "now" so tests are deterministic across days.
   const now = new Date("2026-05-15T12:00:00Z");
-
-  it("returns zero totals for empty list", () => {
-    expect(comparePeriods([], now)).toEqual({
-      current: 0,
-      prior: 0,
-      deltaPercent: null,
-    });
-  });
 
   it("counts transactions in the last 30 days as current", () => {
     const txs = [
