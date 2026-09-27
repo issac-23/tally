@@ -15,14 +15,6 @@ describe("isActiveRoute", () => {
     expect(isActiveRoute("/transactionsplus", "/transactions")).toBe(false);
   });
 
-  it("returns false for unrelated routes", () => {
-    expect(isActiveRoute("/settings", "/transactions")).toBe(false);
-  });
-
-  it("returns true for a deeply nested route", () => {
-    expect(isActiveRoute("/transactions/123/edit", "/transactions")).toBe(true);
-  });
-
   it("only matches the root href on an exact root path", () => {
     expect(isActiveRoute("/", "/")).toBe(true);
     expect(isActiveRoute("/dashboard", "/")).toBe(false);

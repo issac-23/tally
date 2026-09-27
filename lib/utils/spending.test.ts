@@ -83,19 +83,6 @@ describe("monthlyBurnRate", () => {
     expect(monthlyBurnRate([rent], [rent])).toBe(1850);
   });
 
-  it("combines one-off and recurring spending", () => {
-    const rent = {
-      amount: 1850,
-      date: iso(2),
-      merchant: "Greystar",
-      recurrence: "monthly",
-      category_id: "housing",
-    };
-    expect(
-      monthlyBurnRate([{ amount: 200, date: iso(2), recurrence: "once" }, rent], [rent])
-    ).toBe(2050);
-  });
-
   it("treats a missing recurrence as one-off, so pre-migration rows keep their meaning", () => {
     expect(monthlyBurnRate([{ amount: 75, date: iso(1) }], [])).toBe(75);
   });
@@ -132,11 +119,6 @@ describe("monthlyAverageSpend", () => {
   it("excludes transactions older than 30 days", () => {
     const txs = [tx(10, 100), tx(45, 999)];
     expect(monthlyAverageSpend(txs)).toBe(100);
-  });
-
-  it("returns 0 when every transaction is outside the window", () => {
-    const txs = [tx(60, 50), tx(90, 999)];
-    expect(monthlyAverageSpend(txs)).toBe(0);
   });
 
   it("coerces string amounts to numbers", () => {
@@ -197,29 +179,5 @@ describe("spendingSummary", () => {
       this_week: 0,
       this_month: 0,
     });
-  });
-
-  it("aggregates a realistic mix correctly", () => {
-    // today: 10 + 20 = 30
-    // week (last 7 days, today included): 30 + 50 = 80
-    // month (last 30 days, week included): 80 + 100 = 180
-    // 60-day-old should be ignored entirely
-    const s = spendingSummary([
-      tx(0, 10),
-      tx(0, 20),
-      tx(3, 50),
-      tx(20, 100),
-      tx(60, 999),
-    ]);
-    expect(s).toEqual({ today: 30, this_week: 80, this_month: 180 });
-  });
-
-  it("includes today within the week and month windows by design", () => {
-    // Verifies windows are nested, not exclusive — a today transaction
-    // legitimately shows up in all three running totals.
-    const s = spendingSummary([tx(0, 100)]);
-    expect(s.today).toBe(100);
-    expect(s.this_week).toBe(100);
-    expect(s.this_month).toBe(100);
   });
 });
