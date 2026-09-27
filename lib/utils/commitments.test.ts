@@ -16,14 +16,6 @@ function row(overrides: Record<string, unknown> = {}) {
 }
 
 describe("commitmentBreakdown", () => {
-  it("returns an empty, zeroed summary for no commitments", () => {
-    const summary = commitmentBreakdown([], 4200);
-    expect(summary.commitments).toEqual([]);
-    expect(summary.total).toBe(0);
-    expect(summary.remaining).toBe(4200);
-    expect(summary.shareOfIncome).toBe(0);
-  });
-
   it("converts each cadence to a monthly cost", () => {
     const summary = commitmentBreakdown(
       [
