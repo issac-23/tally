@@ -273,10 +273,11 @@ export function ProjectionExplorer({
 
 function Caption({ projection }: { projection: SavingsProjection }) {
   if (projection.depletionMonth !== null) {
-    const months = Math.round(projection.depletionMonth * 10) / 10;
+    // Days once it's under a month, so this doesn't read "~0.6 months" next
+    // to a runway card already saying "18 days left".
     return (
       <span className="text-xs font-medium uppercase tracking-widest text-[var(--color-status-red)]">
-        Depletes in ~{months} months
+        Depletes in ~{formatMonthSpan(projection.depletionMonth)}
       </span>
     );
   }
