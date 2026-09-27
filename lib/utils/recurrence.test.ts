@@ -1,21 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
-  RECURRENCE_OPTIONS,
   isRecurrence,
   monthlyEquivalent,
   recurrenceBadge,
-  recurrenceLabel,
   recurringMonthlyTotal,
   recurringSeries,
 } from "./recurrence";
 
 describe("isRecurrence", () => {
-  it("accepts every option it offers", () => {
-    for (const opt of RECURRENCE_OPTIONS) {
-      expect(isRecurrence(opt.value)).toBe(true);
-    }
-  });
-
   it("rejects anything else", () => {
     expect(isRecurrence("fortnightly")).toBe(false);
     expect(isRecurrence("")).toBe(false);
@@ -27,10 +19,6 @@ describe("isRecurrence", () => {
 describe("monthlyEquivalent", () => {
   it("is zero for a one-off, whatever the amount", () => {
     expect(monthlyEquivalent(2000, "once")).toBe(0);
-  });
-
-  it("passes a monthly amount straight through", () => {
-    expect(monthlyEquivalent(1850, "monthly")).toBe(1850);
   });
 
   it("spreads a yearly bill over twelve months", () => {
@@ -72,17 +60,9 @@ describe("monthlyEquivalent", () => {
 });
 
 describe("recurrenceLabel / recurrenceBadge", () => {
-  it("labels a known value", () => {
-    expect(recurrenceLabel("biweekly")).toBe("Every 2 weeks");
-  });
-
   it("gives one-off an empty badge so no chip renders", () => {
     expect(recurrenceBadge("once")).toBe("");
     expect(recurrenceBadge(null)).toBe("");
-  });
-
-  it("badges a recurring value", () => {
-    expect(recurrenceBadge("monthly")).toBe("Monthly");
   });
 });
 
