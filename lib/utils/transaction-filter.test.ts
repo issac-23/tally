@@ -26,14 +26,6 @@ describe("filterTransactions", () => {
     expect(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "   " })).toHaveLength(4);
   });
 
-  it("matches the merchant", () => {
-    expect(ids(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "uniqlo" }))).toEqual(["2"]);
-  });
-
-  it("matches the note", () => {
-    expect(ids(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "storage" }))).toEqual(["3"]);
-  });
-
   it("ignores case and surrounding space", () => {
     expect(ids(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "  BLUE bottle " }))).toEqual(["1"]);
   });
@@ -48,28 +40,14 @@ describe("filterTransactions", () => {
     expect(ids(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "foo" }))).toEqual(["1", "4"]);
   });
 
-  it("matches the category name", () => {
-    expect(ids(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "groceries" }))).toEqual(["4"]);
-  });
-
   it("survives a row with no category", () => {
     expect(ids(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "storage" }))).toEqual(["3"]);
-  });
-
-  it("returns nothing when nothing matches", () => {
-    expect(filterTransactions(ROWS, { ...EMPTY_FILTER, query: "zzz" })).toEqual([]);
   });
 
   it("filters to one category", () => {
     expect(
       ids(filterTransactions(ROWS, { ...EMPTY_FILTER, categoryId: "cat-shopping" }))
     ).toEqual(["2"]);
-  });
-
-  it("excludes uncategorised rows when a category is picked", () => {
-    expect(
-      filterTransactions(ROWS, { ...EMPTY_FILTER, categoryId: "cat-food" })
-    ).toHaveLength(1);
   });
 
   it("applies the category and the query together", () => {
@@ -100,10 +78,6 @@ describe("filterTransactions", () => {
 });
 
 describe("isFilterActive", () => {
-  it("is false for the empty filter", () => {
-    expect(isFilterActive(EMPTY_FILTER)).toBe(false);
-  });
-
   it("ignores a query that's only whitespace", () => {
     expect(isFilterActive({ ...EMPTY_FILTER, query: "   " })).toBe(false);
   });

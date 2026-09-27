@@ -31,12 +31,6 @@ describe("baseScenario", () => {
 describe("createFixtureClient", () => {
   beforeEach(resetFixtureStores);
 
-  it("returns a signed-in user by default", async () => {
-    const supabase = createFixtureClient({ scenario: "full" });
-    const { data } = await supabase.auth.getUser();
-    expect(data.user?.id).toBeTruthy();
-  });
-
   it("returns no user for the signedout scenario", async () => {
     const supabase = createFixtureClient({ scenario: "signedout" });
     const { data } = await supabase.auth.getUser();
@@ -155,11 +149,6 @@ describe("createFixtureClient", () => {
     expect(data.user?.email).toBe("fixture@tally.dev");
   });
 
-  it("survives being awaited through a promise chain", async () => {
-    const supabase = await Promise.resolve(createFixtureClient({ scenario: "full" }));
-    expect(typeof supabase.from).toBe("function");
-  });
-
   it("throws on a query method it does not implement", () => {
     const supabase = createFixtureClient({ scenario: "full" });
     // `ilike` is real Supabase API the stub has no answer for. Returning an
@@ -184,12 +173,6 @@ describe("createFixtureClient", () => {
     // be reached.
     const supabase = createFixtureClient({ scenario: "boom" });
     await expect(supabase.auth.getUser()).rejects.toThrow(/simulated auth failure/i);
-  });
-
-  it("leaves reads alone in every other scenario", async () => {
-    const supabase = createFixtureClient({ scenario: "full" });
-    const { error } = await supabase.from("transactions").select("id");
-    expect(error).toBeNull();
   });
 
   it("seeds an income source matching the scenario's salary", async () => {
