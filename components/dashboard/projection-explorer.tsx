@@ -5,7 +5,11 @@ import { RotateCcw } from "lucide-react";
 import { RunwayProjection } from "@/components/charts/runway-projection";
 import { formatCurrency } from "@/lib/utils/format";
 import { calculateRunway } from "@/lib/utils/runway";
-import { projectSavings, type SavingsProjection } from "@/lib/utils/projection";
+import {
+  projectSavings,
+  type ProjectionScale,
+  type SavingsProjection,
+} from "@/lib/utils/projection";
 import {
   formatMonthSpan,
   runwayDelta,
@@ -25,6 +29,11 @@ interface ProjectionExplorerProps {
   incomeSchedule: number[];
   /** The real burn rate. The slider starts here and resets back to it. */
   monthlyAvgSpend: number;
+  /**
+   * Window and step, picked once on the server from the real projection and
+   * held constant while the slider moves so the axis doesn't rescale.
+   */
+  scale: ProjectionScale;
   /** Pre-computed month labels, server-rendered so first paint is stable. */
   monthLabels: string[];
   hasSpendingData: boolean;
@@ -43,6 +52,7 @@ export function ProjectionExplorer({
   monthlyIncome,
   incomeSchedule,
   monthlyAvgSpend,
+  scale,
   monthLabels,
   hasSpendingData,
 }: ProjectionExplorerProps) {
@@ -59,13 +69,18 @@ export function ProjectionExplorer({
   const isExploring = Math.abs(spend - monthlyAvgSpend) > step / 2;
 
   const baseRunway = calculateRunway(savings, monthlyIncome, monthlyAvgSpend);
-  const baseProjection = projectSavings(savings, incomeSchedule, monthlyAvgSpend);
+  const baseProjection = projectSavings(
+    savings,
+    incomeSchedule,
+    monthlyAvgSpend,
+    scale
+  );
 
   const runway = isExploring
     ? calculateRunway(savings, monthlyIncome, spend)
     : baseRunway;
   const projection = isExploring
-    ? projectSavings(savings, incomeSchedule, spend)
+    ? projectSavings(savings, incomeSchedule, spend, scale)
     : baseProjection;
 
   const delta = runwayDelta(
