@@ -54,6 +54,32 @@ export interface ProjectSavingsOptions {
   periodMonths?: number;
 }
 
+export type ProjectionUnit = "day" | "week" | "month";
+
+export interface ProjectionScale extends Required<ProjectSavingsOptions> {
+  unit: ProjectionUnit;
+}
+
+/**
+ * Pick a window that actually shows the shape of the decline.
+ *
+ * Twelve monthly points is the right frame for a healthy balance, but it is
+ * the wrong one for savings that run out in a fortnight: the line drops
+ * between the first two points and then lies flat on zero across the rest of
+ * the chart, which reads as a rendering fault rather than as bad news. Short
+ * runways get a shorter window and a finer step, so the drop occupies most of
+ * the axis and the flat tail is just the tail.
+ */
+export function projectionScale(depletionMonth: number | null): ProjectionScale {
+  if (depletionMonth === null || depletionMonth >= 6) {
+    return { unit: "month", periods: DEFAULT_PROJECTION_MONTHS, periodMonths: 1 };
+  }
+  if (depletionMonth >= 1.5) {
+    return { unit: "week", periods: 13, periodMonths: 7 / DAYS_PER_MONTH };
+  }
+  return { unit: "day", periods: 30, periodMonths: 1 / DAYS_PER_MONTH };
+}
+
 export function projectSavings(
   currentSavings: number,
   /**
