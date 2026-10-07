@@ -20,6 +20,14 @@ updates:
         update-types:
           - minor
           - patch
+      # @vitest/ui peer-depends on an exact vitest version, and vitest 5
+      # needs a newer @types/node than we had pinned. Bumped one at a time
+      # they each fail `npm ci` on a peer conflict, so they move together.
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@types/node"
     commit-message:
       prefix: "deps"
 
