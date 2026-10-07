@@ -1,22 +1,27 @@
-# Supabase pauses a free-tier project after 7 days with no requests, and
-# restoring it is manual. One request every few days resets that clock.
+# Supabase pauses a free-tier project after 7 days with no activity, and
+# restoring it is manual.
 #
 # pg_cron inside the database does NOT count — the activity has to arrive
 # from outside, through the API gateway.
+#
+# This used to read from `categories`. It returned HTTP 200 for three weeks
+# and the project paused anyway, three days after a successful ping, so a
+# read was evidently not resetting the clock. It writes now.
 name: keep supabase awake
 
 on:
   schedule:
-    # Every third day at 06:00 UTC. Well inside the 7-day window, so a single
-    # missed run (GitHub drops scheduled jobs under load) isn't a problem.
-    - cron: "0 6 */3 * *"
+    # Daily. The old every-third-day schedule left no room to notice a
+    # problem: the run that caught the pause was also the first one that
+    # could have prevented it.
+    - cron: "0 6 * * *"
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Query the database
+      - name: Write to the database
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -24,16 +29,25 @@ jobs:
           set -euo pipefail
 
           status=$(curl -sS -o /tmp/body -w '%{http_code}' \
+            -X PATCH \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-            "${SUPABASE_URL}/rest/v1/categories?select=id&limit=1")
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d "{\"beat_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+            "${SUPABASE_URL}/rest/v1/heartbeat?id=eq.1")
 
           echo "HTTP ${status}"
+          cat /tmp/body
 
-          # 200 is a real query. 401/403 still reached Postgres through the
-          # gateway, which is all the inactivity timer cares about — RLS
-          # rejecting an anonymous read is a success for this job's purpose.
-          case "${status}" in
-            200|401|403) echo "project is awake" ;;
-            *) echo "unexpected response:"; cat /tmp/body; exit 1 ;;
-          esac
+          # Only a 200 counts now. The old job accepted 401/403 on the theory
+          # that a rejected request still reached Postgres; that theory is
+          # what let three weeks of green runs hide a project going to sleep.
+          if [ "${status}" != "200" ]; then
+            echo
+            echo "heartbeat write failed — the project may be paused."
+            echo "check https://supabase.com/dashboard"
+            exit 1
+          fi
+
+          echo "project is awake"
