@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           # security-extended picks up lower-severity rules the default pack
@@ -40,6 +40,6 @@ jobs:
       # No build step: CodeQL reads JS/TS directly, and `next build` would
       # only add a few minutes and a Supabase dependency for nothing.
       - name: Analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:javascript-typescript"
