@@ -28,6 +28,23 @@ updates:
           - "vitest"
           - "@vitest/*"
           - "@types/node"
+    # Two majors that cannot pass CI, and not because anything here is out
+    # of date — the plugins eslint-config-next pulls in have not shipped
+    # support at any published version:
+    #
+    #   typescript-eslint@8.71.1   peer typescript: >=4.8.4 <6.1.0
+    #   eslint-plugin-react@7.37.5 peer eslint: ^3 || ... || ^9.7
+    #
+    # Both are already the newest releases, so there is nothing to upgrade
+    # to. Recheck those two peer ranges before removing either ignore —
+    # minor and patch updates still come through in the meantime.
+    ignore:
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
     commit-message:
       prefix: "deps"
 
