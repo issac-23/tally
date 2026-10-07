@@ -1,0 +1,32 @@
+# Dependabot version updates.
+#
+# Security alerts are separate and come from GitHub itself — this file is
+# what opens PRs to actually fix them, plus routine version bumps.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    # Enough to keep things moving without burying the PR list.
+    open-pull-requests-limit: 5
+    # Next, React and Tailwind move fast and break things across majors.
+    # Minor and patch land on their own; majors get read first.
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: "deps"
+
+  # The CI workflows pin action majors, which still drift.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
