@@ -1,0 +1,45 @@
+# CodeQL static analysis.
+#
+# Advanced setup rather than the Security-tab toggle, so the configuration
+# lives in the repo and changes to it go through review like anything else.
+name: codeql
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, so a newly published query finds old code rather than waiting
+    # for the next push.
+    - cron: "0 7 * * 1"
+
+jobs:
+  analyze:
+    name: analyze javascript-typescript
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      # Writing the results back to the Security tab.
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # security-extended picks up lower-severity rules the default pack
+          # skips. The repo is small enough to afford the noise.
+          queries: security-extended
+
+      # No build step: CodeQL reads JS/TS directly, and `next build` would
+      # only add a few minutes and a Supabase dependency for nothing.
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
