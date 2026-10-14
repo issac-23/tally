@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createStore } from "@/lib/supabase/server";
+import { orThrow } from "@/lib/store/types";
 import { Logo } from "@/components/ui/logo";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -13,11 +14,7 @@ export default async function OnboardingPage() {
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("savings_balance, monthly_salary, onboarded")
-    .eq("id", user.id)
-    .single();
+  const profile = orThrow(await (await createStore()).profiles.get(user.id));
 
   // Already onboarded — straight to dashboard.
   if (profile?.onboarded) {
@@ -42,10 +39,7 @@ export default async function OnboardingPage() {
         </div>
 
         <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-6">
-          <OnboardingForm
-            initialSavings={profile?.savings_balance ?? 0}
-            initialSalary={profile?.monthly_salary ?? 0}
-          />
+          <OnboardingForm initialSavings={profile?.savings_balance ?? 0} />
         </div>
 
       </div>
