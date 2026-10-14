@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createFixtureClient, resetFixtureStores } from "@/lib/dev/fixtures";
+import { GENERIC_ERROR } from "@/lib/utils/errors";
 
 const state = vi.hoisted(() => ({ scenario: "new" }));
 
@@ -71,7 +72,7 @@ describe("completeOnboarding", () => {
 
     vi.spyOn(console, "error").mockImplementation(() => {});
     const result = await completeOnboarding(5000, 3000);
-    expect(result.error).toBe("Something went wrong. Try again in a moment.");
+    expect(result.error).toBe(GENERIC_ERROR);
     expect(result.error).not.toMatch(/fixture/i);
   });
 });

@@ -1,5 +1,5 @@
 /**
- * What a server action says when the database refuses a write.
+ * What a server action says when the database fails it, on a write or a read.
  *
  * Supabase errors name tables, columns and constraints. That's useful in the
  * server log and nowhere else, so the actions log the real error and hand
