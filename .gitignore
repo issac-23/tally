@@ -1,4 +1,4 @@
-c# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -36,11 +36,8 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files — never commit secrets, only the example
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-# .env.example is committed intentionally (no secrets, just template)
+.env*
+!.env.example
 
 # vercel
 .vercel
