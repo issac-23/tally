@@ -5,6 +5,7 @@ import { Tag } from "lucide-react";
 import { createCategory, deleteCategory } from "./actions";
 import { SuccessCheck } from "@/components/ui/success-check";
 import { useErrorShake } from "@/lib/hooks/use-error-shake";
+import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/utils/limits";
 
 const CATEGORY_COLORS = [
   "#D4762C",
@@ -73,7 +74,7 @@ export function CategoryForm({ categories }: CategoryFormProps) {
             if (error) setError(null);
             clearError();
           }}
-          maxLength={32}
+          maxLength={MAX_CATEGORY_NAME_LENGTH}
           placeholder="Books, School, Coffee..."
           className="t-input w-full rounded border border-[var(--color-border-strong)] bg-white px-3 py-2.5 text-[var(--color-foreground)] focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)] [&.is-error]:border-[var(--color-status-red)]"
         />

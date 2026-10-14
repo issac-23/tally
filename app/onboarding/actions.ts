@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logAndFail } from "@/lib/utils/errors";
 import { validateProfileInput } from "@/lib/utils/profile";
-import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE, roundToCents } from "@/lib/utils/limits";
+import { MAX_AMOUNT_MESSAGE, roundToCents, roundWithinCap } from "@/lib/utils/limits";
 
 export interface OnboardingResult {
   error?: string;
@@ -22,8 +22,8 @@ export async function completeOnboarding(
   if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
     return { error: "Please enter valid numbers." };
   }
-  const salary = roundToCents(monthlySalary);
-  if (salary > MAX_AMOUNT) {
+  const salary = roundWithinCap(monthlySalary);
+  if (salary === null) {
     return { error: MAX_AMOUNT_MESSAGE };
   }
 

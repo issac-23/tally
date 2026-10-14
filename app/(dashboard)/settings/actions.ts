@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logAndFail } from "@/lib/utils/errors";
 import { validateProfileInput } from "@/lib/utils/profile";
+import { MAX_CATEGORY_NAME_LENGTH } from "@/lib/utils/limits";
 import { validateIncomeInput, type IncomeInput } from "@/lib/utils/income";
 
 export interface UpdateProfileResult {
@@ -63,8 +64,10 @@ export async function createCategory(
     return { error: "Category name must be at least 2 characters." };
   }
 
-  if (trimmedName.length > 32) {
-    return { error: "Category name must be 32 characters or fewer." };
+  if (trimmedName.length > MAX_CATEGORY_NAME_LENGTH) {
+    return {
+      error: `Category name must be ${MAX_CATEGORY_NAME_LENGTH} characters or fewer.`,
+    };
   }
 
   if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {

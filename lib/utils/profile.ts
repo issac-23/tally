@@ -1,4 +1,4 @@
-import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE, roundToCents } from "./limits";
+import { MAX_AMOUNT_MESSAGE, roundWithinCap } from "./limits";
 
 /**
  * Validate the financial inputs that go into a user's profile.
@@ -15,7 +15,7 @@ export function validateProfileInput(savingsBalance: number): string | null {
   if (savingsBalance < 0) {
     return "Amounts can't be negative.";
   }
-  if (roundToCents(savingsBalance) > MAX_AMOUNT) {
+  if (roundWithinCap(savingsBalance) === null) {
     return MAX_AMOUNT_MESSAGE;
   }
   return null;

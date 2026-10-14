@@ -12,12 +12,13 @@
  */
 
 import { isRecurrence, type Recurrence } from "./recurrence";
+import { blankToNull, isIsoDate } from "./input";
 import {
-  MAX_AMOUNT,
   MAX_AMOUNT_MESSAGE,
   MAX_DESCRIPTION_LENGTH,
   MAX_MERCHANT_LENGTH,
-  roundToCents,
+  roundWithinCap,
+  tooLongMessage,
 } from "./limits";
 
 export interface TransactionInput {
@@ -56,8 +57,8 @@ export function validateTransactionInput(
   }
   // Money has two decimal places. Rounding here rather than rejecting keeps
   // a pasted "12.345" from bouncing the user back to the form.
-  const rounded = roundToCents(amount);
-  if (rounded > MAX_AMOUNT) {
+  const rounded = roundWithinCap(amount);
+  if (rounded === null) {
     return { ok: false, error: MAX_AMOUNT_MESSAGE };
   }
 
@@ -87,16 +88,10 @@ export function validateTransactionInput(
   const description = blankToNull(input.description);
   const merchant = blankToNull(input.merchant);
   if (description && description.length > MAX_DESCRIPTION_LENGTH) {
-    return {
-      ok: false,
-      error: `Keep the note to ${MAX_DESCRIPTION_LENGTH} characters or fewer.`,
-    };
+    return { ok: false, error: tooLongMessage("note", MAX_DESCRIPTION_LENGTH) };
   }
   if (merchant && merchant.length > MAX_MERCHANT_LENGTH) {
-    return {
-      ok: false,
-      error: `Keep the merchant to ${MAX_MERCHANT_LENGTH} characters or fewer.`,
-    };
+    return { ok: false, error: tooLongMessage("merchant", MAX_MERCHANT_LENGTH) };
   }
 
   return {
@@ -110,24 +105,6 @@ export function validateTransactionInput(
       recurrence,
     },
   };
-}
-
-function blankToNull(value: string | null | undefined): string | null {
-  const trimmed = (value ?? "").trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-function isIsoDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-  // `new Date("2026-02-31")` rolls over to March rather than failing, so
-  // compare the round trip instead of trusting the parse.
-  const parsed = new Date(`${value}T00:00:00Z`);
-  return (
-    !Number.isNaN(parsed.getTime()) &&
-    parsed.toISOString().slice(0, 10) === value
-  );
 }
 
 /**
