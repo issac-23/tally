@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { canUseCategory } from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
   type TransactionInput,
@@ -29,6 +30,10 @@ export async function createTransaction(
 
   if (!user) {
     return { error: "You're not signed in." };
+  }
+
+  if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
+    return { error: "That category isn't available. Pick another one." };
   }
 
   const { error } = await supabase.from("transactions").insert({

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { canUseCategory } from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
   type TransactionInput,
@@ -69,6 +70,10 @@ export async function updateTransaction(
 
   if (!user) {
     return { error: "You're not signed in." };
+  }
+
+  if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
+    return { error: "That category isn't available. Pick another one." };
   }
 
   // Same belt-and-braces as delete: RLS is the real boundary, the explicit
