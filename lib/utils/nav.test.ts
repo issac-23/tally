@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isActiveRoute } from "./nav";
+import { isActiveRoute, isProtectedRoute } from "./nav";
 
 describe("isActiveRoute", () => {
   it("returns true for an exact match", () => {
@@ -19,4 +19,24 @@ describe("isActiveRoute", () => {
     expect(isActiveRoute("/", "/")).toBe(true);
     expect(isActiveRoute("/dashboard", "/")).toBe(false);
   });
+});
+
+describe("isProtectedRoute", () => {
+  it.each([
+    "/dashboard",
+    "/settings",
+    "/transactions",
+    "/transactions/new",
+    "/transactions/abc/edit",
+    "/onboarding",
+  ])("guards %s", (pathname) => {
+    expect(isProtectedRoute(pathname)).toBe(true);
+  });
+
+  it.each(["/", "/auth/callback", "/settingsx", "/dashboard-preview"])(
+    "leaves %s open",
+    (pathname) => {
+      expect(isProtectedRoute(pathname)).toBe(false);
+    }
+  );
 });

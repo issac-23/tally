@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProtectedRoute } from "@/lib/utils/nav";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -15,7 +16,7 @@ export async function updateSession(request: NextRequest) {
     const scenario = request.cookies.get("tally_fx")?.value ?? "full";
     if (
       scenario.startsWith("signedout") &&
-      request.nextUrl.pathname.startsWith("/dashboard")
+      isProtectedRoute(request.nextUrl.pathname)
     ) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
@@ -49,11 +50,8 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect dashboard routes — redirect unauthenticated users to home
-  if (
-    !user &&
-    request.nextUrl.pathname.startsWith("/dashboard")
-  ) {
+  // Protect signed-in routes — redirect unauthenticated users to home
+  if (!user && isProtectedRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);
