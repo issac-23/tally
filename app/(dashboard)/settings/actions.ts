@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { GENERIC_ERROR } from "@/lib/utils/errors";
+import { logAndFail } from "@/lib/utils/errors";
 import { validateProfileInput } from "@/lib/utils/profile";
 import { validateIncomeInput, type IncomeInput } from "@/lib/utils/income";
 
@@ -45,8 +45,7 @@ export async function updateProfile(
     .eq("id", user.id);
 
   if (error) {
-    console.error("updateProfile failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("updateProfile", error);
   }
 
   revalidatePath("/dashboard");
@@ -93,8 +92,7 @@ export async function createCategory(
     if (error.code === "23505") {
       return { error: "You already have a category with that name." };
     }
-    console.error("createCategory failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("createCategory", error);
   }
 
   revalidatePath("/settings");
@@ -135,8 +133,7 @@ export async function deleteCategory(
     .eq("is_preset", false);
 
   if (error) {
-    console.error("deleteCategory failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("deleteCategory", error);
   }
 
   revalidatePath("/settings");
@@ -173,8 +170,7 @@ export async function createIncomeSource(
     .insert({ user_id: user.id, ...validated.fields });
 
   if (error) {
-    console.error("createIncomeSource failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("createIncomeSource", error);
   }
 
   revalidatePath("/dashboard");
@@ -206,8 +202,7 @@ export async function deleteIncomeSource(
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("deleteIncomeSource failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("deleteIncomeSource", error);
   }
 
   revalidatePath("/dashboard");

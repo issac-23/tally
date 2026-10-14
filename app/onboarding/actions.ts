@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { GENERIC_ERROR } from "@/lib/utils/errors";
+import { logAndFail } from "@/lib/utils/errors";
 import { validateProfileInput } from "@/lib/utils/profile";
 import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE, roundToCents } from "@/lib/utils/limits";
 
@@ -52,8 +52,7 @@ export async function completeOnboarding(
     .select("id");
 
   if (error) {
-    console.error("completeOnboarding failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("completeOnboarding", error);
   }
 
   if (!flipped || flipped.length === 0) {
@@ -70,8 +69,7 @@ export async function completeOnboarding(
       if (insertError.code === "23505") {
         redirect("/dashboard");
       }
-      console.error("completeOnboarding failed:", insertError);
-      return { error: GENERIC_ERROR };
+      return logAndFail("completeOnboarding", insertError);
     }
   }
 
@@ -87,8 +85,7 @@ export async function completeOnboarding(
     });
 
     if (incomeError) {
-      console.error("completeOnboarding failed:", incomeError);
-      return { error: GENERIC_ERROR };
+      return logAndFail("completeOnboarding", incomeError);
     }
   }
 
