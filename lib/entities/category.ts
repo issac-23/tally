@@ -2,7 +2,7 @@
 
 import { validateCategoryInput } from "@/lib/utils/category-input";
 import { MAX_CATEGORIES, rowLimitMessage } from "@/lib/utils/limits";
-import { fail, failDb, ok, PAGES, type Client, type WriteResult } from "./write";
+import { fail, failStore, ok, PAGES, type Store, type WriteResult } from "./write";
 
 const MESSAGES = {
   duplicate: "You already have a category with that name.",
@@ -10,7 +10,7 @@ const MESSAGES = {
 };
 
 export async function createCategory(
-  client: Client,
+  store: Store,
   userId: string,
   name: string,
   color: string
@@ -18,13 +18,8 @@ export async function createCategory(
   const validated = validateCategoryInput(name, color);
   if (!validated.ok) return fail(validated.error);
 
-  const { error } = await client.from("categories").insert({
-    user_id: userId,
-    ...validated.fields,
-    icon: "tag",
-    is_preset: false,
-  });
-  if (error) return failDb("createCategory", error, MESSAGES);
+  const added = await store.categories.add(userId, validated.fields);
+  if (!added.ok) return failStore("createCategory", added.error, MESSAGES);
 
   // Categories are listed in Settings and in both expense forms, and shown on
   // every expense, so the dashboard's breakdowns follow.
@@ -34,25 +29,19 @@ export async function createCategory(
 /**
  * Delete one of the user's own custom categories.
  *
- * Presets are protected by RLS (the delete policy requires is_preset = false
- * and a matching user_id), and transactions.category_id is ON DELETE SET NULL,
- * so existing expenses survive the delete and fall back to "Uncategorized"
- * rather than disappearing with the category.
+ * Presets can't be deleted (the store only removes custom ones), and the
+ * expenses in a deleted category survive and fall back to "Uncategorized"
+ * rather than disappearing with it.
  */
 export async function deleteCategory(
-  client: Client,
+  store: Store,
   userId: string,
   id: string
 ): Promise<WriteResult> {
   if (!id) return fail("Missing category id.");
 
-  const { error } = await client
-    .from("categories")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId)
-    .eq("is_preset", false);
-  if (error) return failDb("deleteCategory", error);
+  const removed = await store.categories.remove(userId, id);
+  if (!removed.ok) return failStore("deleteCategory", removed.error);
 
   // The expenses that fell back to "Uncategorized" are on the list too.
   return ok(

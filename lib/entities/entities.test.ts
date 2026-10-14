@@ -1,47 +1,49 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createFixtureClient, resetFixtureStores } from "@/lib/dev/fixtures";
-import { CATEGORY_UNAVAILABLE_MESSAGE } from "@/lib/supabase/categories";
-import { GENERIC_ERROR } from "@/lib/utils/errors";
+import { createFixtureStore, resetFixtureStores } from "@/lib/dev/fixtures";
 import { addDays, latestDayOnEarth } from "@/lib/utils/calendar";
+import { GENERIC_ERROR } from "@/lib/utils/errors";
+import type { Store, StoreError, StoreResult } from "@/lib/store/types";
+import { CATEGORY_UNAVAILABLE_MESSAGE } from "./category-access";
 import { createTransaction, deleteTransaction, updateTransaction } from "./transaction";
 import { createIncomeSource, deleteIncomeSource } from "./income-source";
 import { createCategory, deleteCategory } from "./category";
 import { completeOnboarding, updateSavings } from "./profile";
-import type { Client, WriteResult } from "./write";
+import type { WriteResult } from "./write";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 
-// The fixture client stands in for the Supabase client, so it is handed over
-// as `never`, the way lib/supabase/server.ts does.
-function fixture(scenario = "full"): Client {
-  return createFixtureClient({ scenario }) as never;
+function fixture(scenario = "full"): Store {
+  return createFixtureStore({ scenario });
 }
 
 /**
- * A client whose writes all come back with `error` and whose reads find a
- * preset category: how Postgres answers when a trigger or constraint
- * rejects a row, which the fixture doesn't model.
+ * A store whose inserts all come back with `error` and whose category lookup
+ * finds a preset, for the rejections the module has to turn into messages.
+ * (The in-memory store raises the real ones, and its own tests cover when.)
  */
-function rejecting(error: { code: string; message: string }): Client {
-  const query: Record<string, unknown> = {
-    select: () => query,
-    eq: () => query,
-    maybeSingle: async () => ({
-      data: { id: "cat-food", user_id: null, is_preset: true },
-      error: null,
-    }),
-    insert: async () => ({ error }),
-  };
-  return { from: () => query } as never;
+function rejecting(error: StoreError): Store {
+  const refused = async (): Promise<StoreResult<never>> => ({ ok: false, error });
+  return {
+    categories: {
+      find: async () => ({
+        ok: true,
+        value: { id: "cat-food", user_id: null, is_preset: true, name: "Food", icon: "x", color: "#111111" },
+      }),
+      add: refused,
+    },
+    transactions: { add: refused },
+    incomeSources: { add: refused },
+  } as unknown as Store;
 }
-
-const rowCap = (table: string, cap: number) => ({
-  code: "23514",
-  message: `row limit reached: ${table} allows ${cap} rows per user`,
-});
 
 function paths(result: WriteResult): string[] {
   return result.ok ? result.refresh.map((r) => r.path) : [];
+}
+
+async function firstTransactionId(store: Store): Promise<string> {
+  const all = await store.transactions.listAll();
+  if (!all.ok) throw new Error("read failed");
+  return all.value[0].id;
 }
 
 const expense = {
@@ -60,15 +62,15 @@ beforeEach(() => {
 
 describe("transaction writes", () => {
   it("creates an expense and refreshes the pages that show it", async () => {
-    const client = fixture("empty");
-    const result = await createTransaction(client, USER_ID, expense);
+    const store = fixture("empty");
+    const result = await createTransaction(store, USER_ID, expense);
     expect(paths(result)).toEqual(["/dashboard", "/transactions"]);
 
-    const { data } = await client.from("transactions").select("*");
-    expect(data).toHaveLength(1);
+    const all = await store.transactions.listAll();
+    expect(all.ok && all.value).toHaveLength(1);
   });
 
-  it("says why before touching the database", async () => {
+  it("says why before touching the store", async () => {
     const result = await createTransaction(fixture("empty"), USER_ID, { ...expense, amount: 0 });
     expect(result).toEqual({ ok: false, error: "Amount must be greater than zero." });
   });
@@ -81,19 +83,17 @@ describe("transaction writes", () => {
     expect(result).toEqual({ ok: false, error: CATEGORY_UNAVAILABLE_MESSAGE });
   });
 
-  it("maps the row cap and the ownership trigger to their own messages", async () => {
-    const capped = await createTransaction(
-      rejecting(rowCap("transactions", 10000)),
-      USER_ID,
-      expense
-    );
+  it("maps the row cap and the ownership rejection to their own messages", async () => {
+    const capped = await createTransaction(rejecting({ kind: "row-limit" }), USER_ID, expense);
     expect(capped).toEqual({
       ok: false,
       error: "You've reached the limit of 10,000 expenses.",
     });
 
+    // The pre-check passed, then the store refused it anyway: a race with a
+    // category being deleted.
     const raced = await createTransaction(
-      rejecting({ code: "23514", message: "category is not available to this user" }),
+      rejecting({ kind: "category-unavailable" }),
       USER_ID,
       expense
     );
@@ -101,14 +101,14 @@ describe("transaction writes", () => {
   });
 
   it("only calls a date future once no time zone has reached it", async () => {
-    const client = fixture("empty");
+    const store = fixture("empty");
     // A browser east of the server defaults to a day the server hasn't
     // reached yet; that has to go through.
     const edge = latestDayOnEarth();
-    expect((await createTransaction(client, USER_ID, { ...expense, date: edge })).ok).toBe(true);
+    expect((await createTransaction(store, USER_ID, { ...expense, date: edge })).ok).toBe(true);
 
     expect(
-      await createTransaction(client, USER_ID, { ...expense, date: addDays(edge, 1) })
+      await createTransaction(store, USER_ID, { ...expense, date: addDays(edge, 1) })
     ).toEqual({ ok: false, error: "That date is in the future." });
   });
 
@@ -118,16 +118,15 @@ describe("transaction writes", () => {
   });
 
   it("edits an expense, and also refreshes its edit page", async () => {
-    const client = fixture("full");
-    const { data } = await client.from("transactions").select("id").limit(1);
-    const id = (data as Array<{ id: string }>)[0].id;
+    const store = fixture("full");
+    const id = await firstTransactionId(store);
 
-    const result = await updateTransaction(client, USER_ID, id, { ...expense, amount: 99 });
+    const result = await updateTransaction(store, USER_ID, id, { ...expense, amount: 99 });
     expect(paths(result)).toEqual(["/dashboard", "/transactions", "/transactions/[id]/edit"]);
     expect(result.ok && result.refresh[2].type).toBe("page");
 
-    const row = await client.from("transactions").select("amount").eq("id", id).maybeSingle();
-    expect((row.data as { amount: number }).amount).toBe(99);
+    const row = await store.transactions.get(USER_ID, id);
+    expect(row.ok && row.value?.amount).toBe(99);
   });
 
   it("reports an edit to an expense that's gone", async () => {
@@ -135,15 +134,13 @@ describe("transaction writes", () => {
     expect(result).toEqual({ ok: false, error: "That expense no longer exists." });
   });
 
-  it("deletes an expense", async () => {
-    const client = fixture("full");
-    const { data } = await client.from("transactions").select("id").limit(1);
-    const id = (data as Array<{ id: string }>)[0].id;
+  it("deletes an expense, and deleting one that's already gone is fine", async () => {
+    const store = fixture("full");
+    const id = await firstTransactionId(store);
 
-    const result = await deleteTransaction(client, USER_ID, id);
-    expect(result.ok).toBe(true);
-    const after = await client.from("transactions").select("id").eq("id", id);
-    expect(after.data).toEqual([]);
+    expect((await deleteTransaction(store, USER_ID, id)).ok).toBe(true);
+    expect(await store.transactions.get(USER_ID, id)).toEqual({ ok: true, value: null });
+    expect((await deleteTransaction(store, USER_ID, id)).ok).toBe(true);
   });
 
   it("needs an id to edit or delete", async () => {
@@ -159,15 +156,15 @@ describe("income source writes", () => {
   const input = { name: "Retainer", amount: 1500, recurrence: "monthly" };
 
   it("creates and deletes a source, refreshing the dashboard and settings", async () => {
-    const client = fixture("empty");
-    const created = await createIncomeSource(client, USER_ID, input);
+    const store = fixture("empty");
+    const created = await createIncomeSource(store, USER_ID, input);
     expect(paths(created)).toEqual(["/dashboard", "/settings"]);
 
-    const { data } = await client.from("income_sources").select("id, name");
-    const added = (data as Array<{ id: string; name: string }>).find((s) => s.name === "Retainer");
+    const list = await store.incomeSources.list();
+    const added = list.ok ? list.value.find((s) => s.name === "Retainer") : undefined;
     expect(added).toBeDefined();
 
-    const deleted = await deleteIncomeSource(client, USER_ID, added!.id);
+    const deleted = await deleteIncomeSource(store, USER_ID, added!.id);
     expect(paths(deleted)).toEqual(["/dashboard", "/settings"]);
   });
 
@@ -177,11 +174,7 @@ describe("income source writes", () => {
   });
 
   it("maps the row cap to a message naming the limit", async () => {
-    const result = await createIncomeSource(
-      rejecting(rowCap("income_sources", 50)),
-      USER_ID,
-      input
-    );
+    const result = await createIncomeSource(rejecting({ kind: "row-limit" }), USER_ID, input);
     expect(result).toEqual({
       ok: false,
       error: "You've reached the limit of 50 income sources.",
@@ -200,23 +193,25 @@ describe("category writes", () => {
     ]);
   });
 
-  it("explains a duplicate name", async () => {
-    const client = fixture("empty");
-    await createCategory(client, USER_ID, "Pets", "#112233");
-    expect(await createCategory(client, USER_ID, "Pets", "#112233")).toEqual({
+  it("explains a duplicate name, but only an exact one", async () => {
+    const store = fixture("empty");
+    await createCategory(store, USER_ID, "Pets", "#112233");
+    expect(await createCategory(store, USER_ID, "Pets", "#112233")).toEqual({
       ok: false,
       error: "You already have a category with that name.",
     });
+    // Postgres' unique index doesn't fold case, so neither does the store.
+    expect((await createCategory(store, USER_ID, "pets", "#112233")).ok).toBe(true);
   });
 
   it("validates the name and the colour", async () => {
-    const client = fixture("empty");
-    expect((await createCategory(client, USER_ID, "a", "#112233")).ok).toBe(false);
-    expect(await createCategory(client, USER_ID, "x".repeat(33), "#112233")).toEqual({
+    const store = fixture("empty");
+    expect((await createCategory(store, USER_ID, "a", "#112233")).ok).toBe(false);
+    expect(await createCategory(store, USER_ID, "x".repeat(33), "#112233")).toEqual({
       ok: false,
       error: "Category name must be 32 characters or fewer.",
     });
-    expect(await createCategory(client, USER_ID, "Pets", "red")).toEqual({
+    expect(await createCategory(store, USER_ID, "Pets", "red")).toEqual({
       ok: false,
       error: "Choose a valid category color.",
     });
@@ -224,7 +219,7 @@ describe("category writes", () => {
 
   it("maps the row cap to a message naming the limit", async () => {
     const result = await createCategory(
-      rejecting(rowCap("categories", 100)),
+      rejecting({ kind: "row-limit" }),
       USER_ID,
       "Pets",
       "#112233"
@@ -244,12 +239,12 @@ describe("category writes", () => {
 
 describe("profile writes", () => {
   it("updates the savings balance, rounded to cents", async () => {
-    const client = fixture("full");
-    const result = await updateSavings(client, USER_ID, 1234.567);
+    const store = fixture("full");
+    const result = await updateSavings(store, USER_ID, 1234.567);
     expect(paths(result)).toEqual(["/dashboard", "/settings"]);
 
-    const { data } = await client.from("profiles").select("savings_balance").maybeSingle();
-    expect((data as { savings_balance: number }).savings_balance).toBe(1234.57);
+    const profile = await store.profiles.get(USER_ID);
+    expect(profile.ok && profile.value?.savings_balance).toBe(1234.57);
   });
 
   it("rejects a negative balance", async () => {
@@ -260,26 +255,26 @@ describe("profile writes", () => {
   });
 
   it("holds the salary to the income rules, and skips one that rounds to nothing", async () => {
-    const client = fixture("new");
-    expect(await completeOnboarding(client, USER_ID, 5000, -5)).toEqual({
+    const store = fixture("new");
+    expect(await completeOnboarding(store, USER_ID, 5000, -5)).toEqual({
       ok: false,
       error: "Amount must be greater than zero.",
     });
 
-    expect((await completeOnboarding(client, USER_ID, 5000, 0.001)).ok).toBe(true);
-    const { data } = await client.from("income_sources").select("name");
-    expect(data).toEqual([]);
+    expect((await completeOnboarding(store, USER_ID, 5000, 0.001)).ok).toBe(true);
+    const sources = await store.incomeSources.list();
+    expect(sources.ok && sources.value).toEqual([]);
   });
 
   it("finishes onboarding once; a replay succeeds with nothing to refresh", async () => {
-    const client = fixture("new");
-    const first = await completeOnboarding(client, USER_ID, 5000, 3000);
+    const store = fixture("new");
+    const first = await completeOnboarding(store, USER_ID, 5000, 3000);
     expect(paths(first)).toEqual(["/dashboard", "/settings"]);
 
-    const replay = await completeOnboarding(client, USER_ID, 5000, 3000);
+    const replay = await completeOnboarding(store, USER_ID, 5000, 3000);
     expect(replay).toEqual({ ok: true, refresh: [] });
 
-    const { data } = await client.from("income_sources").select("name");
-    expect(data).toHaveLength(1);
+    const sources = await store.incomeSources.list();
+    expect(sources.ok && sources.value).toHaveLength(1);
   });
 });
