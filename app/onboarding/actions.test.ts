@@ -36,6 +36,32 @@ describe("completeOnboarding", () => {
     expect(await salaries()).toBe(1);
   });
 
+  it("adds the salary once when two calls run at the same time", async () => {
+    const results = await Promise.allSettled([
+      completeOnboarding(5000, 3000),
+      completeOnboarding(5000, 3000),
+    ]);
+    // Both end at the dashboard; only the call that flipped `onboarded`
+    // gets to add the income source.
+    for (const result of results) {
+      expect(result.status).toBe("rejected");
+      expect((result as PromiseRejectedResult).reason.message).toBe("REDIRECT /dashboard");
+    }
+    expect(await salaries()).toBe(1);
+  });
+
+  it("rounds to cents before checking the cap", async () => {
+    expect((await completeOnboarding(5000, 9_999_999_999.999)).error).toMatch(/or less/);
+    expect((await completeOnboarding(9_999_999_999.999, 0)).error).toMatch(/or less/);
+    expect(await salaries()).toBe(0);
+
+    // 9_999_999_999.994 rounds down to the cap, so it's allowed.
+    await expect(completeOnboarding(5000, 9_999_999_999.994)).rejects.toThrow(
+      "REDIRECT /dashboard"
+    );
+    expect(await salaries()).toBe(1);
+  });
+
   it("hides the database's own error message", async () => {
     state.scenario = "error";
     // "error" is already onboarded; flip it so the write is attempted.

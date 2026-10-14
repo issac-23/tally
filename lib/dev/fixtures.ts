@@ -595,9 +595,20 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
 
   private runProfiles(): { data: unknown; error: unknown } {
     const profile = this.store.profile;
-    if (this.mode === "update" || this.mode === "upsert") {
+    if (this.mode === "upsert") {
       Object.assign(profile, this.payload);
       return { data: null, error: null };
+    }
+    if (this.mode === "update") {
+      // Like Postgres, only a row that passes the filters is written, and the
+      // affected rows come back for callers that chain .select().
+      if (!this.matches(profile as unknown as Row)) return { data: [], error: null };
+      Object.assign(profile, this.payload);
+      return { data: [{ ...profile }], error: null };
+    }
+    if (this.mode === "insert") {
+      // The fixture always has a profile row, so an insert is a key clash.
+      return { data: null, error: { message: "duplicate key value", code: "23505" } };
     }
     const rows = this.matches(profile as unknown as Row) ? [profile] : [];
     return { data: rows, error: null };

@@ -7,7 +7,12 @@
  */
 
 import { RECURRENCE_OPTIONS, monthlyEquivalent } from "./recurrence";
-import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE, MAX_INCOME_NAME_LENGTH } from "./limits";
+import {
+  MAX_AMOUNT,
+  MAX_AMOUNT_MESSAGE,
+  MAX_INCOME_NAME_LENGTH,
+  roundToCents,
+} from "./limits";
 
 /**
  * The cadences income can have.
@@ -134,7 +139,7 @@ export function validateIncomeInput(input: IncomeInput): IncomeValidation {
   if (!Number.isFinite(amount) || amount <= 0) {
     return { ok: false, error: "Amount must be greater than zero." };
   }
-  const rounded = Math.round(amount * 100) / 100;
+  const rounded = roundToCents(amount);
   if (rounded > MAX_AMOUNT) {
     return { ok: false, error: MAX_AMOUNT_MESSAGE };
   }

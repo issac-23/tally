@@ -17,6 +17,7 @@ import {
   MAX_AMOUNT_MESSAGE,
   MAX_DESCRIPTION_LENGTH,
   MAX_MERCHANT_LENGTH,
+  roundToCents,
 } from "./limits";
 
 export interface TransactionInput {
@@ -55,7 +56,7 @@ export function validateTransactionInput(
   }
   // Money has two decimal places. Rounding here rather than rejecting keeps
   // a pasted "12.345" from bouncing the user back to the form.
-  const rounded = Math.round(amount * 100) / 100;
+  const rounded = roundToCents(amount);
   if (rounded > MAX_AMOUNT) {
     return { ok: false, error: MAX_AMOUNT_MESSAGE };
   }

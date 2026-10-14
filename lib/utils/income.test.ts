@@ -179,5 +179,10 @@ describe("validateIncomeInput", () => {
       ok: false,
       error: expect.stringMatching(/or less/),
     });
+    // Rounds up past the ceiling, so it has to be caught after rounding.
+    expect(validateIncomeInput(input({ amount: 9_999_999_999.999 }))).toMatchObject({
+      ok: false,
+      error: expect.stringMatching(/or less/),
+    });
   });
 });

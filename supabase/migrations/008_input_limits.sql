@@ -1,4 +1,4 @@
--- Size limits and per-user row caps.
+-- Size limits, per-user row caps, and category ownership.
 --
 -- The app checks all of this before writing (lib/utils/limits.ts and the
 -- validators that use it), but the anon key is public and RLS only asks who
@@ -107,3 +107,51 @@ create trigger categories_row_cap
   before insert on public.categories
   for each row
   execute function public.enforce_row_cap(100);
+
+-- ------------------------------------------------------- category ownership
+
+-- transactions.category_id is a plain foreign key (003), and foreign key
+-- checks don't go through RLS, so a direct PostgREST call could file an
+-- expense under another user's category. canUseCategory stops that in the
+-- app; this stops it for everyone else.
+--
+-- Runs as the caller (no security definer), so RLS on categories already
+-- hides other users' custom categories from this lookup and they come back
+-- as "not found". Not found is rejected, which is what makes that safe. The
+-- explicit owner comparison is for callers that bypass RLS (the service
+-- role, a future security definer), where the row would be visible.
+create or replace function public.enforce_category_ownership()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  category public.categories%rowtype;
+begin
+  if new.category_id is null then
+    return new;
+  end if;
+
+  -- Neither the category nor the owner changed on this update, so there is
+  -- nothing new to check.
+  if tg_op = 'UPDATE'
+     and new.category_id is not distinct from old.category_id
+     and new.user_id is not distinct from old.user_id then
+    return new;
+  end if;
+
+  select * into category from public.categories where id = new.category_id;
+
+  if not found or not (category.is_preset or category.user_id = new.user_id) then
+    raise exception 'category is not available to this user'
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger transactions_category_ownership
+  before insert or update on public.transactions
+  for each row
+  execute function public.enforce_category_ownership();
