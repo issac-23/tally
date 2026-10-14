@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createStore } from "@/lib/supabase/server";
+import { orThrow } from "@/lib/store/types";
 import { SettingsForm } from "./settings-form";
 import { CategoryForm } from "./category-form";
 import { IncomeSources } from "./income-sources";
-import type { IncomeSource } from "@/lib/utils/income";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -15,31 +15,22 @@ export default async function SettingsPage() {
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("savings_balance")
-    .eq("id", user.id)
-    .maybeSingle();
+  const store = await createStore();
+  const [profileResult, incomeResult, categoryResult] = await Promise.all([
+    store.profiles.get(user.id),
+    store.incomeSources.list(),
+    // Only the user's own categories — presets aren't editable, so listing
+    // them here would offer a Remove button that would always be refused.
+    store.categories.listCustom(user.id),
+  ]);
 
-  const savings = Number(profile?.savings_balance ?? 0);
-
-  const { data: incomeData } = await supabase
-    .from("income_sources")
-    .select("id, name, amount, recurrence, starts_on, ends_on")
-    .order("created_at", { ascending: true });
-
-  const incomeSources = (incomeData ?? []) as unknown as IncomeSource[];
-
-  // Only the user's own categories — presets aren't editable, so listing
-  // them here would offer a Remove button that RLS would always reject.
-  const { data: categoryData } = await supabase
-    .from("categories")
-    .select("id, name, color")
-    .eq("user_id", user.id)
-    .eq("is_preset", false)
-    .order("name", { ascending: true });
-
-  const customCategories = categoryData ?? [];
+  const savings = orThrow(profileResult)?.savings_balance ?? 0;
+  const incomeSources = orThrow(incomeResult);
+  const customCategories = orThrow(categoryResult).map(({ id, name, color }) => ({
+    id,
+    name,
+    color,
+  }));
 
   return (
     <main className="px-4 py-6 sm:px-6 sm:py-10">

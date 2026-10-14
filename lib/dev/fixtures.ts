@@ -1,5 +1,6 @@
 /**
- * Local development fixtures — a stand-in for the Supabase client.
+ * Local development fixtures — seeded data and a fake session, standing in
+ * for Supabase.
  *
  * ## Why this exists
  *
@@ -20,8 +21,10 @@
  *
  * ## Why it cannot leak into production
  *
- * Both call sites in `lib/supabase/` test `process.env.NODE_ENV !== "production"`
- * *before* the flag, as a literal comparison. Next.js substitutes NODE_ENV at
+ * Every call site in `lib/supabase/` (`createClient` and `createStore` in
+ * server.ts, and the session refresh in middleware.ts) tests
+ * `process.env.NODE_ENV !== "production"` *before* the flag, as a literal
+ * comparison. Next.js substitutes NODE_ENV at
  * build time, so in a production build that branch is statically false, the
  * `await import()` below it is unreachable, and this module is dropped from
  * the bundle entirely. Setting the flag on a deployed environment therefore
@@ -32,11 +35,13 @@
  *
  * ## Keeping it honest
  *
- * This implements only the slice of the Supabase query API the app actually
- * calls. Anything else throws loudly rather than returning empty data — a
- * fixture that silently answers "no rows" to a query it doesn't understand is
- * worse than no fixture at all, because the UI renders a plausible empty
- * state and nothing looks wrong.
+ * The data is a plain in-memory store (lib/dev/memory-store.ts) that enforces
+ * the same rules as the migrations: unique category names, the per-user row
+ * caps, category ownership, the CHECK constraints. It sits behind the same
+ * Store interface as the Supabase adapter, so there is no query language to
+ * emulate and nothing for the fixtures to drift from but those rules. The auth
+ * side only implements what the app calls and throws on anything else, since
+ * a fixture that quietly answers an unknown call is worse than none.
  */
 
 /** Grepped by scripts/assert-no-fixtures.mjs. Do not remove or reword. */
@@ -375,25 +380,7 @@ export function resetFixtureStores(): void {
   stores.clear();
 }
 
-// ---------------------------------------------------------------- query stub
-
-type Row = Record<string, unknown>;
-type FilterOp = "eq" | "neq" | "gte";
-interface Filter {
-  op: FilterOp;
-  column: string;
-  value: unknown;
-}
-
-const WRITE_FAILURE = {
-  message: "Fixture mode: simulated database failure.",
-  code: "FX500",
-};
-
-const READ_FAILURE = {
-  message: "Fixture mode: simulated database read failure.",
-  code: "FX503",
-};
+// ---------------------------------------------------------------- auth stub
 
 /**
  * Properties the runtime probes on arbitrary objects. `createClient` is async,
@@ -429,331 +416,6 @@ function guardUnsupported<T extends object>(target: T, label: string): T {
       );
     },
   });
-}
-
-class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
-  private filters: Filter[] = [];
-  private orderings: Array<{ column: string; ascending: boolean }> = [];
-  private rowLimit: number | null = null;
-  private columns = "*";
-  private mode: "select" | "insert" | "update" | "upsert" | "delete" = "select";
-  private payload: Row | null = null;
-
-  constructor(
-    private readonly table: string,
-    private readonly store: MemoryData,
-    private readonly failWrites: boolean,
-    private readonly failReads = false,
-    private readonly rejectReads = false
-  ) {}
-
-  select(columns = "*") {
-    this.columns = columns;
-    return this;
-  }
-  insert(payload: Row) {
-    this.mode = "insert";
-    this.payload = payload;
-    return this;
-  }
-  upsert(payload: Row) {
-    this.mode = "upsert";
-    this.payload = payload;
-    return this;
-  }
-  update(payload: Row) {
-    this.mode = "update";
-    this.payload = payload;
-    return this;
-  }
-  delete() {
-    this.mode = "delete";
-    return this;
-  }
-  eq(column: string, value: unknown) {
-    this.filters.push({ op: "eq", column, value });
-    return this;
-  }
-  neq(column: string, value: unknown) {
-    this.filters.push({ op: "neq", column, value });
-    return this;
-  }
-  gte(column: string, value: unknown) {
-    this.filters.push({ op: "gte", column, value });
-    return this;
-  }
-  order(column: string, options: { ascending?: boolean } = {}) {
-    this.orderings.push({ column, ascending: options.ascending !== false });
-    return this;
-  }
-  limit(count: number) {
-    this.rowLimit = count;
-    return this;
-  }
-
-  async maybeSingle() {
-    const { data, error } = await this.run();
-    if (error) return { data: null, error };
-    return { data: (data as Row[])[0] ?? null, error: null };
-  }
-
-  async single() {
-    const { data, error } = await this.run();
-    if (error) return { data: null, error };
-    const rows = data as Row[];
-    if (rows.length === 0) {
-      return { data: null, error: { message: "No rows found", code: "PGRST116" } };
-    }
-    return { data: rows[0], error: null };
-  }
-
-  then<TResult1 = { data: unknown; error: unknown }, TResult2 = never>(
-    onfulfilled?:
-      | ((value: { data: unknown; error: unknown }) => TResult1 | PromiseLike<TResult1>)
-      | null,
-    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
-  ): PromiseLike<TResult1 | TResult2> {
-    return this.run().then(onfulfilled, onrejected);
-  }
-
-  private matches(row: Row): boolean {
-    return this.filters.every((filter) => {
-      const actual = String(row[filter.column]);
-      const expected = String(filter.value);
-      if (filter.op === "eq") return actual === expected;
-      if (filter.op === "neq") return actual !== expected;
-      return actual >= expected;
-    });
-  }
-
-  private async run(): Promise<{ data: unknown; error: unknown }> {
-    // A little latency, so loading states are actually observable.
-    await new Promise((resolve) => setTimeout(resolve, 30));
-
-    if (this.mode !== "select" && this.failWrites) {
-      return { data: null, error: WRITE_FAILURE };
-    }
-
-    // The other way a read fails: the request completes and PostgREST says
-    // no. Nothing throws, so a caller that ignores `error` sees no rows.
-    if (this.mode === "select" && this.rejectReads) {
-      return { data: null, error: READ_FAILURE };
-    }
-
-    // Thrown, not returned: a dropped connection surfaces as an exception,
-    // which is what the error boundaries are there to catch.
-    if (this.failReads) {
-      throw new Error(
-        `[tally fixtures] simulated database failure reading "${this.table}"`
-      );
-    }
-
-    switch (this.table) {
-      case "profiles":
-        return this.runProfiles();
-      case "categories":
-        return this.runCategories();
-      case "transactions":
-        return this.runTransactions();
-      case "income_sources":
-        return this.runIncomeSources();
-      default:
-        throw new Error(
-          `[tally fixtures] no fixture data for table "${this.table}". ` +
-            `Add it to lib/dev/fixtures.ts.`
-        );
-    }
-  }
-
-  private runProfiles(): { data: unknown; error: unknown } {
-    const profile = this.store.profile!;
-    if (this.mode === "upsert") {
-      Object.assign(profile, this.payload);
-      return { data: null, error: null };
-    }
-    if (this.mode === "update") {
-      // Like Postgres, only a row that passes the filters is written, and the
-      // affected rows come back for callers that chain .select().
-      if (!this.matches(profile as unknown as Row)) return { data: [], error: null };
-      Object.assign(profile, this.payload);
-      return { data: [{ ...profile }], error: null };
-    }
-    if (this.mode === "insert") {
-      // The fixture always has a profile row, so an insert is a key clash.
-      return { data: null, error: { message: "duplicate key value", code: "23505" } };
-    }
-    const rows = this.matches(profile as unknown as Row) ? [profile] : [];
-    return { data: rows, error: null };
-  }
-
-  private runCategories(): { data: unknown; error: unknown } {
-    if (this.mode === "insert") {
-      const payload = this.payload as Row;
-      const name = String(payload.name);
-      const clash = this.store.categories.some(
-        (c) => c.user_id === USER_ID && c.name.toLowerCase() === name.toLowerCase()
-      );
-      if (clash) {
-        // Matches the unique (user_id, name) constraint from migration 002.
-        return { data: null, error: { message: "duplicate key value", code: "23505" } };
-      }
-      this.store.categories.push({
-        id: `fx-cat-${Date.now()}`,
-        user_id: USER_ID,
-        name,
-        color: String(payload.color),
-        icon: String(payload.icon ?? "tag"),
-        is_preset: false,
-        created_at: new Date().toISOString(),
-      });
-      return { data: null, error: null };
-    }
-
-    if (this.mode === "delete") {
-      const before = this.store.categories.length;
-      this.store.categories = this.store.categories.filter(
-        (c) => !this.matches(c as unknown as Row)
-      );
-      if (before === this.store.categories.length) {
-        return { data: null, error: { message: "No row matched", code: "PGRST116" } };
-      }
-      // Mirrors ON DELETE SET NULL on transactions.category_id.
-      const live = new Set(this.store.categories.map((c) => c.id));
-      for (const t of this.store.transactions) {
-        if (t.category_id && !live.has(t.category_id)) t.category_id = null;
-      }
-      return { data: null, error: null };
-    }
-
-    const rows = this.store.categories.filter((c) => this.matches(c as unknown as Row));
-    return { data: this.sortAndSlice(rows as unknown as Row[]), error: null };
-  }
-
-  private runTransactions(): { data: unknown; error: unknown } {
-    if (this.mode === "insert") {
-      const payload = this.payload as Row;
-      this.store.transactions.push({
-        id: `fx-tx-${Date.now()}`,
-        user_id: USER_ID,
-        amount: Number(payload.amount),
-        description: (payload.description as string) ?? null,
-        merchant: (payload.merchant as string) ?? null,
-        category_id: (payload.category_id as string) ?? null,
-        date: String(payload.date),
-        recurrence: String(payload.recurrence ?? "once"),
-        created_at: new Date().toISOString(),
-      });
-      return { data: null, error: null };
-    }
-
-    if (this.mode === "update") {
-      const payload = this.payload as Row;
-      const touched = this.store.transactions.filter((t) =>
-        this.matches(t as unknown as Row)
-      );
-      for (const row of touched) Object.assign(row, payload);
-      // Postgres returns the affected rows when the caller chains .select(),
-      // and updateTransaction relies on an empty array to tell "you don't own
-      // this row" apart from a successful write.
-      return { data: touched.map((t) => ({ ...t })), error: null };
-    }
-
-    if (this.mode === "delete") {
-      const before = this.store.transactions.length;
-      this.store.transactions = this.store.transactions.filter(
-        (t) => !this.matches(t as unknown as Row)
-      );
-      if (before === this.store.transactions.length) {
-        return { data: null, error: { message: "No row matched", code: "PGRST116" } };
-      }
-      return { data: null, error: null };
-    }
-
-    // `category:categories(...)` in the select string means the caller wants
-    // the joined category object rather than the bare foreign key.
-    const wantsCategory = this.columns.includes("categories(");
-    const rows = this.store.transactions
-      .filter((t) => this.matches(t as unknown as Row))
-      .map((t) => {
-        const row: Row = { ...t };
-        if (wantsCategory) {
-          const category = this.store.categories.find((c) => c.id === t.category_id);
-          row.category = category
-            ? {
-                id: category.id,
-                name: category.name,
-                icon: category.icon,
-                color: category.color,
-              }
-            : null;
-        }
-        return row;
-      });
-
-    return { data: this.sortAndSlice(rows), error: null };
-  }
-
-  private runIncomeSources(): { data: unknown; error: unknown } {
-    if (this.mode === "insert") {
-      const payload = this.payload as Row;
-      this.store.incomeSources.push({
-        id: `fx-inc-${Date.now()}`,
-        user_id: USER_ID,
-        name: String(payload.name),
-        amount: Number(payload.amount),
-        recurrence: String(payload.recurrence ?? "monthly"),
-        starts_on: (payload.starts_on as string) ?? null,
-        ends_on: (payload.ends_on as string) ?? null,
-        created_at: new Date().toISOString(),
-      });
-      return { data: null, error: null };
-    }
-
-    if (this.mode === "update") {
-      const touched = this.store.incomeSources.filter((row) =>
-        this.matches(row as unknown as Row)
-      );
-      for (const row of touched) Object.assign(row, this.payload);
-      return { data: touched.map((row) => ({ ...row })), error: null };
-    }
-
-    if (this.mode === "delete") {
-      const before = this.store.incomeSources.length;
-      this.store.incomeSources = this.store.incomeSources.filter(
-        (row) => !this.matches(row as unknown as Row)
-      );
-      if (before === this.store.incomeSources.length) {
-        return { data: null, error: { message: "No row matched", code: "PGRST116" } };
-      }
-      return { data: null, error: null };
-    }
-
-    const rows = this.store.incomeSources.filter((row) =>
-      this.matches(row as unknown as Row)
-    );
-    return { data: this.sortAndSlice(rows as unknown as Row[]), error: null };
-  }
-
-  /** Supabase applies .order() calls in sequence; replicate as a multi-key sort. */
-  private sortAndSlice(rows: Row[]): Row[] {
-    let out = [...rows];
-
-    if (this.orderings.length > 0) {
-      out.sort((a, b) => {
-        for (const { column, ascending } of this.orderings) {
-          const left = a[column];
-          const right = b[column];
-          if (left === right) continue;
-          const comparison = (left as never) > (right as never) ? 1 : -1;
-          return ascending ? comparison : -comparison;
-        }
-        return 0;
-      });
-    }
-
-    if (this.rowLimit !== null) out = out.slice(0, this.rowLimit);
-    return out;
-  }
 }
 
 // ---------------------------------------------------------------- the client
@@ -797,12 +459,15 @@ export function createFixtureStore({ scenario }: FixtureClientOptions) {
   });
 }
 
-export function createFixtureClient({ scenario }: FixtureClientOptions) {
+/**
+ * The auth side of the fixtures: a signed-in (or signed-out, or failing) user
+ * and nothing else. The data is `createFixtureStore`; there is no `from()`
+ * here, and asking for one throws, so a page that reaches past the store
+ * fails loudly instead of reading nothing.
+ */
+export function createFixtureAuthClient({ scenario }: FixtureClientOptions) {
   const base = baseScenario(scenario);
-  const store = getStore(scenario, base);
-  const failWrites = base === "error";
   const failReads = base === "boom";
-  const rejectReads = base === "unreadable";
   const signedOut = base === "signedout";
 
   announceFixtures();
@@ -838,16 +503,5 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
     "auth"
   );
 
-  return guardUnsupported(
-    {
-      auth,
-      from(table: string) {
-        return guardUnsupported(
-          new QueryBuilder(table, store, failWrites, failReads, rejectReads),
-          `from("${table}")`
-        );
-      },
-    },
-    "supabase"
-  );
+  return guardUnsupported({ auth }, "supabase");
 }

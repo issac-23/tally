@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
-  createFixtureClient,
+  createFixtureAuthClient,
   createFixtureStore,
   fixtureData,
   resetFixtureStores,
@@ -10,7 +10,7 @@ import { GENERIC_ERROR } from "@/lib/utils/errors";
 const state = vi.hoisted(() => ({ scenario: "new" }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => createFixtureClient({ scenario: state.scenario }),
+  createClient: async () => createFixtureAuthClient({ scenario: state.scenario }),
   createStore: async () => createFixtureStore({ scenario: state.scenario }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));

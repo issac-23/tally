@@ -17,9 +17,9 @@ export async function createClient() {
     process.env.NODE_ENV !== "production" &&
     process.env.TALLY_DEV_FIXTURES === "1"
   ) {
-    const { createFixtureClient } = await import("@/lib/dev/fixtures");
+    const { createFixtureAuthClient } = await import("@/lib/dev/fixtures");
     const scenario = cookieStore.get("tally_fx")?.value ?? "full";
-    return createFixtureClient({ scenario }) as never;
+    return createFixtureAuthClient({ scenario }) as never;
   }
 
   return createServerClient(
