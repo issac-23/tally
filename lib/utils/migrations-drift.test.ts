@@ -13,7 +13,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { knownDbError } from "@/lib/entities/write";
+import { toStoreError } from "@/lib/store/supabase-store";
 import { INCOME_RECURRENCE_OPTIONS } from "./income";
 import {
   MAX_AMOUNT,
@@ -100,16 +100,19 @@ describe("migration 008 against lib/utils/limits.ts", () => {
     });
   });
 
-  it("raises messages the error mapping still recognises", () => {
+  it("raises messages the store's error mapping still recognises", () => {
     const messages = Array.from(sql008.matchAll(/raise exception\s+'([^']+)'/g), (m) => m[1]);
     expect(messages).toHaveLength(2);
 
-    const known = (message: string) =>
-      knownDbError({ code: "23514", message }, { rowLimit: "capped" });
     // `%` placeholders are filled in by Postgres; the text before them is
     // what the mapping reads.
-    const rendered = messages.map((m) => m.replace("%", "transactions").replace("%", "10000"));
-    expect(rendered.map(known).filter(Boolean)).toHaveLength(2);
+    const kinds = messages.map((m) =>
+      toStoreError({
+        code: "23514",
+        message: m.replace("%", "transactions").replace("%", "10000"),
+      }).kind
+    );
+    expect(kinds.sort()).toEqual(["category-unavailable", "row-limit"]);
   });
 });
 

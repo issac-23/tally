@@ -1,6 +1,4 @@
-import type { createClient } from "@/lib/supabase/server";
-
-type Client = Awaited<ReturnType<typeof createClient>>;
+import type { Store } from "@/lib/store/types";
 
 /** What the actions say when canUseCategory turns a category down. */
 export const CATEGORY_UNAVAILABLE_MESSAGE =
@@ -12,20 +10,16 @@ export const CATEGORY_UNAVAILABLE_MESSAGE =
  *
  * The transactions RLS policies only look at transactions.user_id, so without
  * this an expense could point at another user's category id. RLS on
- * categories already hides those rows from this query; the explicit check
- * says so in code rather than leaving it implied.
+ * categories already hides those rows from this lookup, and migration 008's
+ * trigger refuses the write regardless; the explicit check says so in code
+ * and answers before the write is attempted.
  */
 export async function canUseCategory(
-  supabase: Client,
+  store: Store,
   userId: string,
   categoryId: string
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("id, user_id, is_preset")
-    .eq("id", categoryId)
-    .maybeSingle();
-
-  if (error || !data) return false;
-  return data.is_preset === true || data.user_id === userId;
+  const found = await store.categories.find(categoryId);
+  if (!found.ok || !found.value) return false;
+  return found.value.is_preset || found.value.user_id === userId;
 }

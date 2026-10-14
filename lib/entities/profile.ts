@@ -5,23 +5,20 @@
 import { validateIncomeInput } from "@/lib/utils/income";
 import { validateProfileInput } from "@/lib/utils/profile";
 import { roundToCents } from "@/lib/utils/limits";
-import { fail, failDb, ok, PAGES, type Client, type WriteResult } from "./write";
+import { fail, failStore, ok, PAGES, type Store, type WriteResult } from "./write";
 
 export async function updateSavings(
-  client: Client,
+  store: Store,
   userId: string,
   savingsBalance: number
 ): Promise<WriteResult> {
   const validationError = validateProfileInput(savingsBalance);
   if (validationError) return fail(validationError);
 
-  // Update only the financial fields. Don't touch `onboarded` since the
-  // user has clearly already gone through onboarding to reach Settings.
-  const { error } = await client
-    .from("profiles")
-    .update({ savings_balance: roundToCents(savingsBalance) })
-    .eq("id", userId);
-  if (error) return failDb("updateProfile", error);
+  // Only the balance: the user has clearly already gone through onboarding
+  // to reach Settings, so `onboarded` stays as it is.
+  const saved = await store.profiles.setSavings(userId, roundToCents(savingsBalance));
+  if (!saved.ok) return failStore("updateProfile", saved.error);
 
   return ok(PAGES.dashboard, PAGES.settings);
 }
@@ -34,7 +31,7 @@ export async function updateSavings(
  * the caller can send a replay to the dashboard like a first run.
  */
 export async function completeOnboarding(
-  client: Client,
+  store: Store,
   userId: string,
   savingsBalance: number,
   monthlySalary: number
@@ -52,44 +49,33 @@ export async function completeOnboarding(
       : validateIncomeInput({ name: "Salary", amount: monthlySalary, recurrence: "monthly" });
   if (salary && !salary.ok) return fail(salary.error);
 
+  const savings = roundToCents(savingsBalance);
+
   // Onboarding happens once. The page already sends an onboarded user to the
   // dashboard, but the action can be called directly, and a replay would add
   // another "Salary" income source each time.
   //
   // Reading `onboarded` and then writing it left a gap two parallel calls
-  // could both get through. Flipping it with a conditional update closes
-  // that: Postgres re-checks the WHERE after waiting on the row lock, so
-  // only one call sees onboarded = false and gets a row back.
-  const { data: flipped, error } = await client
-    .from("profiles")
-    .update({ savings_balance: roundToCents(savingsBalance), onboarded: true })
-    .eq("id", userId)
-    .eq("onboarded", false)
-    .select("id");
-  if (error) return failDb("completeOnboarding", error);
+  // could both get through, so the store flips it as one conditional update
+  // and says whether this call was the one that did.
+  const flipped = await store.profiles.markOnboarded(userId, savings);
+  if (!flipped.ok) return failStore("completeOnboarding", flipped.error);
 
-  if (!flipped || flipped.length === 0) {
+  if (!flipped.value) {
     // Either someone got there first, or the sign-up trigger never made a
-    // profile row. Insert settles both: a missing row is created, and an
-    // existing one is a primary key conflict, which means already onboarded.
-    const { error: insertError } = await client.from("profiles").insert({
-      id: userId,
-      savings_balance: roundToCents(savingsBalance),
-      onboarded: true,
-    });
-
-    if (insertError) {
-      if (insertError.code === "23505") return ok();
-      return failDb("completeOnboarding", insertError);
+    // profile row. Creating one settles both: a missing row is made, and an
+    // existing one is a duplicate, which means already onboarded.
+    const created = await store.profiles.createOnboarded(userId, savings);
+    if (!created.ok) {
+      if (created.error.kind === "duplicate") return ok();
+      return failStore("completeOnboarding", created.error);
     }
   }
 
-  // It can be edited or deleted in Settings like any other.
+  // It can be edited or deleted in Settings like any other income source.
   if (salary) {
-    const { error: incomeError } = await client
-      .from("income_sources")
-      .insert({ user_id: userId, ...salary.fields });
-    if (incomeError) return failDb("completeOnboarding", incomeError);
+    const added = await store.incomeSources.add(userId, salary.fields);
+    if (!added.ok) return failStore("completeOnboarding", added.error);
   }
 
   return ok(PAGES.dashboard, PAGES.settings);

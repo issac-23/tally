@@ -71,57 +71,15 @@ export const SCENARIOS: readonly Scenario[] = [
   "signedout", // no session — lands on the landing page
 ] as const;
 
+import {
+  createMemoryStore,
+  type CategoryRow,
+  type IncomeSourceRow,
+  type MemoryData,
+  type TransactionRow,
+} from "./memory-store";
+
 const USER_ID = "00000000-0000-4000-8000-000000000001";
-
-// ---------------------------------------------------------------- row shapes
-
-interface CategoryRow {
-  id: string;
-  user_id: string | null;
-  name: string;
-  color: string;
-  icon: string;
-  is_preset: boolean;
-  created_at: string;
-}
-
-interface TransactionRow {
-  id: string;
-  user_id: string;
-  amount: number;
-  description: string | null;
-  merchant: string | null;
-  category_id: string | null;
-  date: string;
-  recurrence: string;
-  created_at: string;
-}
-
-interface IncomeSourceRow {
-  id: string;
-  user_id: string;
-  name: string;
-  amount: number;
-  recurrence: string;
-  starts_on: string | null;
-  ends_on: string | null;
-  created_at: string;
-}
-
-// No monthly_salary: the app reads income from income_sources now, and a
-// fixture that still served it would hide a query nobody makes.
-interface ProfileRow {
-  id: string;
-  savings_balance: number;
-  onboarded: boolean;
-}
-
-interface Store {
-  profile: ProfileRow;
-  categories: CategoryRow[];
-  transactions: TransactionRow[];
-  incomeSources: IncomeSourceRow[];
-}
 
 // ---------------------------------------------------------------- seed data
 
@@ -237,7 +195,7 @@ function monthEndFromNow(months: number): string {
   return `${end.getFullYear()}-${m}-${String(end.getDate()).padStart(2, "0")}`;
 }
 
-function buildStore(scenario: Scenario): Store {
+function buildStore(scenario: Scenario): MemoryData {
   const categories = presetCategories();
 
   switch (scenario) {
@@ -385,13 +343,13 @@ function buildStore(scenario: Scenario): Store {
  * /dashboard back to /onboarding in a loop.
  */
 const globalForFixtures = globalThis as unknown as {
-  __tallyFixtureStores?: Map<string, Store>;
+  __tallyFixtureStores?: Map<string, MemoryData>;
   __tallyFixtureWarned?: boolean;
 };
 
 const stores =
   globalForFixtures.__tallyFixtureStores ??
-  (globalForFixtures.__tallyFixtureStores = new Map<string, Store>());
+  (globalForFixtures.__tallyFixtureStores = new Map<string, MemoryData>());
 
 /**
  * The cookie may carry a nonce (`new:run7`) so an automated run can start
@@ -403,7 +361,7 @@ export function baseScenario(cookieValue: string): Scenario {
   return SCENARIOS.includes(base) ? base : "full";
 }
 
-function getStore(key: string, base: Scenario): Store {
+function getStore(key: string, base: Scenario): MemoryData {
   let store = stores.get(key);
   if (!store) {
     store = buildStore(base);
@@ -483,7 +441,7 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
 
   constructor(
     private readonly table: string,
-    private readonly store: Store,
+    private readonly store: MemoryData,
     private readonly failWrites: boolean,
     private readonly failReads = false,
     private readonly rejectReads = false
@@ -608,7 +566,7 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
   }
 
   private runProfiles(): { data: unknown; error: unknown } {
-    const profile = this.store.profile;
+    const profile = this.store.profile!;
     if (this.mode === "upsert") {
       Object.assign(profile, this.payload);
       return { data: null, error: null };
@@ -805,6 +763,40 @@ export interface FixtureClientOptions {
   scenario: string;
 }
 
+/** Said once per process, the first time any fixture is handed out. */
+function announceFixtures(): void {
+  if (globalForFixtures.__tallyFixtureWarned) return;
+  globalForFixtures.__tallyFixtureWarned = true;
+  console.warn(
+    `\n  \u26a0  ${FIXTURE_BUILD_SENTINEL}\n` +
+      `     Supabase is stubbed with seeded data from lib/dev/fixtures.ts.\n` +
+      `     Nothing is read from or written to a real database.\n` +
+      `     Unset TALLY_DEV_FIXTURES in .env.local to use real data.\n`
+  );
+}
+
+/**
+ * The seeded data behind a scenario, live. Tests reach for it to set up a
+ * state the store's own interface can't produce, such as a user whose
+ * onboarding was never finished.
+ */
+export function fixtureData(scenario: string): MemoryData {
+  return getStore(scenario, baseScenario(scenario));
+}
+
+/** The data side of the fixtures: a plain in-memory store over a scenario. */
+export function createFixtureStore({ scenario }: FixtureClientOptions) {
+  const base = baseScenario(scenario);
+  announceFixtures();
+  return createMemoryStore({
+    viewerId: USER_ID,
+    data: getStore(scenario, base),
+    failWrites: base === "error",
+    failReads: base === "boom" ? "throw" : base === "unreadable" ? "error" : undefined,
+    latencyMs: 30,
+  });
+}
+
 export function createFixtureClient({ scenario }: FixtureClientOptions) {
   const base = baseScenario(scenario);
   const store = getStore(scenario, base);
@@ -813,15 +805,7 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
   const rejectReads = base === "unreadable";
   const signedOut = base === "signedout";
 
-  if (!globalForFixtures.__tallyFixtureWarned) {
-    globalForFixtures.__tallyFixtureWarned = true;
-    console.warn(
-      `\n  ⚠  ${FIXTURE_BUILD_SENTINEL}\n` +
-        `     Supabase is stubbed with seeded data from lib/dev/fixtures.ts.\n` +
-        `     Nothing is read from or written to a real database.\n` +
-        `     Unset TALLY_DEV_FIXTURES in .env.local to use real data.\n`
-    );
-  }
+  announceFixtures();
 
   const auth = guardUnsupported(
     {
