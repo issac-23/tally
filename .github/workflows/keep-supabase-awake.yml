@@ -50,4 +50,14 @@ jobs:
             exit 1
           fi
 
+          # PostgREST answers 200 with `[]` when the PATCH matches no row (id=1
+          # deleted, or the anon update policy changed), so the status alone
+          # can't prove anything was written. return=representation echoes the
+          # updated row back; no row means no write.
+          if ! grep -q '"beat_at"' /tmp/body; then
+            echo
+            echo "heartbeat returned 200 but updated no row — check the heartbeat row (id=1) and its update policy."
+            exit 1
+          fi
+
           echo "project is awake"
