@@ -11,12 +11,19 @@ import {
   canUseCategory,
   CATEGORY_UNAVAILABLE_MESSAGE,
 } from "@/lib/supabase/categories";
+import { latestDayOnEarth } from "@/lib/utils/calendar";
 import { MAX_TRANSACTIONS, rowLimitMessage } from "@/lib/utils/limits";
 import {
   validateTransactionInput,
   type TransactionInput,
 } from "@/lib/utils/transaction-input";
 import { fail, failDb, ok, PAGES, type Client, type WriteResult } from "./write";
+
+// The form defaults to the browser's today, which can be a day ahead of the
+// server's. A date is only "in the future" once no time zone has reached it.
+function validate(input: TransactionInput) {
+  return validateTransactionInput(input, latestDayOnEarth());
+}
 
 const MESSAGES = {
   rowLimit: rowLimitMessage(MAX_TRANSACTIONS, "expenses"),
@@ -27,7 +34,7 @@ export async function createTransaction(
   userId: string,
   input: TransactionInput
 ): Promise<WriteResult> {
-  const validated = validateTransactionInput(input);
+  const validated = validate(input);
   if (!validated.ok) return fail(validated.error);
 
   if (!(await canUseCategory(client, userId, validated.fields.category_id))) {
@@ -50,7 +57,7 @@ export async function updateTransaction(
 ): Promise<WriteResult> {
   if (!id) return fail("Missing transaction id.");
 
-  const validated = validateTransactionInput(input);
+  const validated = validate(input);
   if (!validated.ok) return fail(validated.error);
 
   if (!(await canUseCategory(client, userId, validated.fields.category_id))) {

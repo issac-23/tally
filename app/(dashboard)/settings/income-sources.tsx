@@ -12,6 +12,7 @@ import {
   sourceMonthlyAmount,
   type IncomeSource,
 } from "@/lib/utils/income";
+import { formatDayKey } from "@/lib/utils/calendar";
 import { formatCurrency } from "@/lib/utils/format";
 import { MAX_INCOME_NAME_LENGTH } from "@/lib/utils/limits";
 import { recurrenceLabel } from "@/lib/utils/recurrence";
@@ -124,11 +125,7 @@ function windowLabel(source: IncomeSource): string {
 }
 
 function shortDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDayKey(iso, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function AddForm({ onDone }: { onDone: () => void }) {

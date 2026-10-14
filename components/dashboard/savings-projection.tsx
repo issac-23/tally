@@ -1,3 +1,4 @@
+import { DAYS_PER_MONTH } from "@/lib/utils/calendar";
 import type { ProjectionScale } from "@/lib/utils/projection";
 import { ProjectionExplorer } from "@/components/dashboard/projection-explorer";
 
@@ -42,8 +43,6 @@ export function SavingsProjectionSection({
     />
   );
 }
-
-const DAYS_PER_MONTH = 30.44;
 
 /**
  * "Now, May, Jun, Jul..." for a monthly window, "Now, Oct 3, Oct 6..." for the
