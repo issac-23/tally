@@ -246,6 +246,18 @@ describe("profile writes", () => {
     });
   });
 
+  it("holds the salary to the income rules, and skips one that rounds to nothing", async () => {
+    const client = fixture("new");
+    expect(await completeOnboarding(client, USER_ID, 5000, -5)).toEqual({
+      ok: false,
+      error: "Amount must be greater than zero.",
+    });
+
+    expect((await completeOnboarding(client, USER_ID, 5000, 0.001)).ok).toBe(true);
+    const { data } = await client.from("income_sources").select("name");
+    expect(data).toEqual([]);
+  });
+
   it("finishes onboarding once; a replay succeeds with nothing to refresh", async () => {
     const client = fixture("new");
     const first = await completeOnboarding(client, USER_ID, 5000, 3000);
