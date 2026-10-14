@@ -36,3 +36,15 @@ export const MAX_CATEGORY_NAME_LENGTH = 32;
 export function tooLongMessage(what: string, max: number): string {
   return `Keep the ${what} to ${max} characters or fewer.`;
 }
+
+/**
+ * Per-user row caps, enforced by the triggers in migration 008. The database
+ * is the real limit; the numbers are here so the user is told what it is.
+ */
+export const MAX_TRANSACTIONS = 10_000;
+export const MAX_INCOME_SOURCES = 50;
+export const MAX_CATEGORIES = 100;
+
+export function rowLimitMessage(max: number, what: string): string {
+  return `You've reached the limit of ${max.toLocaleString("en-US")} ${what}.`;
+}
