@@ -88,6 +88,35 @@ describe("validateTransactionInput", () => {
     expect(fields.merchant).toBe("Blue Bottle");
     expect(fields.description).toBeNull();
   });
+
+  it("caps the note at 200 characters and the merchant at 100", () => {
+    expect(validateTransactionInput(valid({ description: "a".repeat(200) }), TODAY)).toMatchObject({ ok: true });
+    expect(validateTransactionInput(valid({ description: "a".repeat(201) }), TODAY)).toMatchObject({
+      ok: false,
+      error: "Keep the note to 200 characters or fewer.",
+    });
+    expect(validateTransactionInput(valid({ merchant: "a".repeat(100) }), TODAY)).toMatchObject({ ok: true });
+    expect(validateTransactionInput(valid({ merchant: "a".repeat(101) }), TODAY)).toMatchObject({
+      ok: false,
+      error: "Keep the merchant to 100 characters or fewer.",
+    });
+  });
+
+  it("measures length after trimming", () => {
+    const padded = `  ${"a".repeat(200)}  `;
+    expect(validateTransactionInput(valid({ description: padded }), TODAY)).toMatchObject({ ok: true });
+  });
+
+  it("rejects an amount the numeric(12, 2) column can't hold", () => {
+    expect(fieldsOf(validateTransactionInput(valid({ amount: 9_999_999_999.99 }), TODAY)).amount).toBe(
+      9_999_999_999.99
+    );
+    // Rounds up past the ceiling, so it has to be caught after rounding.
+    expect(validateTransactionInput(valid({ amount: 9_999_999_999.999 }), TODAY)).toMatchObject({
+      ok: false,
+      error: expect.stringMatching(/or less/),
+    });
+  });
 });
 
 describe("hasChanges", () => {

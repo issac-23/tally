@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { validateProfileInput } from "@/lib/utils/profile";
+import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE } from "@/lib/utils/limits";
 
 export interface OnboardingResult {
   error?: string;
@@ -19,6 +20,9 @@ export async function completeOnboarding(
   }
   if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
     return { error: "Please enter valid numbers." };
+  }
+  if (monthlySalary > MAX_AMOUNT) {
+    return { error: MAX_AMOUNT_MESSAGE };
   }
 
   const supabase = await createClient();

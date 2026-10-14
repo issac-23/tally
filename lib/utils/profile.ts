@@ -1,3 +1,5 @@
+import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE } from "./limits";
+
 /**
  * Validate the financial inputs that go into a user's profile.
  * Returns null when the inputs are good, or an error message otherwise.
@@ -11,6 +13,9 @@ export function validateProfileInput(savingsBalance: number): string | null {
   }
   if (savingsBalance < 0) {
     return "Amounts can't be negative.";
+  }
+  if (savingsBalance > MAX_AMOUNT) {
+    return MAX_AMOUNT_MESSAGE;
   }
   return null;
 }

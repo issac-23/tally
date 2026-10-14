@@ -12,6 +12,7 @@ import {
 } from "@/lib/utils/recurrence";
 import { hasChanges, type TransactionFields } from "@/lib/utils/transaction-input";
 import { formatCurrency } from "@/lib/utils/format";
+import { MAX_DESCRIPTION_LENGTH, MAX_MERCHANT_LENGTH } from "@/lib/utils/limits";
 import type { Category } from "@/types";
 
 /** The subset of a row the form needs to reopen it for editing. */
@@ -235,6 +236,7 @@ export function ExpenseForm({ categories, transaction }: ExpenseFormProps) {
           type="text"
           value={merchant}
           onChange={(e) => setMerchant(e.target.value)}
+          maxLength={MAX_MERCHANT_LENGTH}
           placeholder="Starbucks, Amazon, Target..."
           className={FIELD_CLASS}
         />
@@ -256,6 +258,7 @@ export function ExpenseForm({ categories, transaction }: ExpenseFormProps) {
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          maxLength={MAX_DESCRIPTION_LENGTH}
           placeholder="Lunch with Sam"
           className={FIELD_CLASS}
         />

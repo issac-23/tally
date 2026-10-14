@@ -164,4 +164,20 @@ describe("validateIncomeInput", () => {
     const result = validateIncomeInput(input({ starts_on: "", ends_on: "  " }));
     expect(result).toMatchObject({ ok: true });
   });
+
+  it("caps the name at 100 characters", () => {
+    expect(validateIncomeInput(input({ name: "a".repeat(100) }))).toMatchObject({ ok: true });
+    expect(validateIncomeInput(input({ name: "a".repeat(101) }))).toMatchObject({
+      ok: false,
+      error: "Keep the name to 100 characters or fewer.",
+    });
+  });
+
+  it("rejects an amount the numeric(12, 2) column can't hold", () => {
+    expect(validateIncomeInput(input({ amount: 9_999_999_999.99 }))).toMatchObject({ ok: true });
+    expect(validateIncomeInput(input({ amount: 10_000_000_000 }))).toMatchObject({
+      ok: false,
+      error: expect.stringMatching(/or less/),
+    });
+  });
 });

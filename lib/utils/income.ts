@@ -7,6 +7,7 @@
  */
 
 import { RECURRENCE_OPTIONS, monthlyEquivalent } from "./recurrence";
+import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE, MAX_INCOME_NAME_LENGTH } from "./limits";
 
 /**
  * The cadences income can have.
@@ -122,10 +123,20 @@ export function validateIncomeInput(input: IncomeInput): IncomeValidation {
   if (name === "") {
     return { ok: false, error: "Give it a name." };
   }
+  if (name.length > MAX_INCOME_NAME_LENGTH) {
+    return {
+      ok: false,
+      error: `Keep the name to ${MAX_INCOME_NAME_LENGTH} characters or fewer.`,
+    };
+  }
 
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     return { ok: false, error: "Amount must be greater than zero." };
+  }
+  const rounded = Math.round(amount * 100) / 100;
+  if (rounded > MAX_AMOUNT) {
+    return { ok: false, error: MAX_AMOUNT_MESSAGE };
   }
 
   if (!isIncomeRecurrence(input.recurrence)) {
@@ -148,7 +159,7 @@ export function validateIncomeInput(input: IncomeInput): IncomeValidation {
     ok: true,
     fields: {
       name,
-      amount: Math.round(amount * 100) / 100,
+      amount: rounded,
       recurrence: input.recurrence,
       starts_on: startsOn,
       ends_on: endsOn,

@@ -18,4 +18,9 @@ describe("validateProfileInput", () => {
     expect(validateProfileInput(Infinity)).toBe("Please enter valid numbers.");
     expect(validateProfileInput(-Infinity)).toBe("Please enter valid numbers.");
   });
+
+  it("rejects a balance the numeric(12, 2) column can't hold", () => {
+    expect(validateProfileInput(9_999_999_999.99)).toBeNull();
+    expect(validateProfileInput(10_000_000_000)).toMatch(/or less/);
+  });
 });
