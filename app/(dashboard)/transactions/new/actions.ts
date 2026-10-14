@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { GENERIC_ERROR } from "@/lib/utils/errors";
 import { canUseCategory } from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
@@ -42,7 +43,8 @@ export async function createTransaction(
   });
 
   if (error) {
-    return { error: error.message };
+    console.error("createTransaction failed:", error);
+    return { error: GENERIC_ERROR };
   }
 
   revalidatePath("/dashboard");

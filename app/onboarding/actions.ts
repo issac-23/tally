@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { GENERIC_ERROR } from "@/lib/utils/errors";
 import { validateProfileInput } from "@/lib/utils/profile";
 import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE } from "@/lib/utils/limits";
 
@@ -34,6 +35,23 @@ export async function completeOnboarding(
     return { error: "You're not signed in." };
   }
 
+  // Onboarding happens once. The page already sends an onboarded user to the
+  // dashboard, but the action can be called directly, and a replay would add
+  // another "Salary" income source each time.
+  const { data: existing, error: profileError } = await supabase
+    .from("profiles")
+    .select("onboarded")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("completeOnboarding failed:", profileError);
+    return { error: GENERIC_ERROR };
+  }
+  if (existing?.onboarded) {
+    redirect("/dashboard");
+  }
+
   // Upsert: handles both fresh signups (auto-created blank profile)
   // and any edge case where the row didn't exist yet.
   const { error } = await supabase
@@ -45,7 +63,8 @@ export async function completeOnboarding(
     });
 
   if (error) {
-    return { error: error.message };
+    console.error("completeOnboarding failed:", error);
+    return { error: GENERIC_ERROR };
   }
 
   // Onboarding still asks one question about income, because asking someone
@@ -60,7 +79,8 @@ export async function completeOnboarding(
     });
 
     if (incomeError) {
-      return { error: incomeError.message };
+      console.error("completeOnboarding failed:", incomeError);
+      return { error: GENERIC_ERROR };
     }
   }
 

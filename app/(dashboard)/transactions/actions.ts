@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { GENERIC_ERROR } from "@/lib/utils/errors";
 import { canUseCategory } from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
@@ -38,7 +39,8 @@ export async function deleteTransaction(
     .eq("user_id", user.id);
 
   if (error) {
-    return { error: error.message };
+    console.error("deleteTransaction failed:", error);
+    return { error: GENERIC_ERROR };
   }
 
   revalidatePath("/dashboard");
@@ -87,7 +89,8 @@ export async function updateTransaction(
     .select("id");
 
   if (error) {
-    return { error: error.message };
+    console.error("updateTransaction failed:", error);
+    return { error: GENERIC_ERROR };
   }
   if (!data || data.length === 0) {
     return { error: "That expense no longer exists." };
