@@ -17,6 +17,10 @@ on:
     - cron: "0 6 * * *"
   workflow_dispatch:
 
+# The job only talks to Supabase with its own secrets; it needs nothing
+# from the GitHub token.
+permissions: {}
+
 jobs:
   ping:
     runs-on: ubuntu-latest
@@ -37,8 +41,9 @@ jobs:
             -d "{\"beat_at\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
             "${SUPABASE_URL}/rest/v1/heartbeat?id=eq.1")
 
+          # Status only. The body is the heartbeat row, and this repo is
+          # public, so its run logs are too.
           echo "HTTP ${status}"
-          cat /tmp/body
 
           # Only a 200 counts now. The old job accepted 401/403 on the theory
           # that a rejected request still reached Postgres; that theory is
