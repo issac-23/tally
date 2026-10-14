@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { logAndFail } from "@/lib/utils/errors";
-import { canUseCategory } from "@/lib/supabase/categories";
+import {
+  canUseCategory,
+  CATEGORY_UNAVAILABLE_MESSAGE,
+} from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
   type TransactionInput,
@@ -34,7 +37,7 @@ export async function createTransaction(
   }
 
   if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
-    return { error: "That category isn't available. Pick another one." };
+    return { error: CATEGORY_UNAVAILABLE_MESSAGE };
   }
 
   const { error } = await supabase.from("transactions").insert({
