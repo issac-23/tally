@@ -1,9 +1,12 @@
+import { MAX_AMOUNT, MAX_AMOUNT_MESSAGE, roundToCents } from "./limits";
+
 /**
  * Validate the financial inputs that go into a user's profile.
  * Returns null when the inputs are good, or an error message otherwise.
  *
- * The DB has CHECK constraints as a backstop, but catching it here gives
- * a friendlier message than a raw Postgres error.
+ * Migration 008 adds the same range as a CHECK constraint on
+ * profiles.savings_balance; catching it here gives a friendlier message than
+ * a raw Postgres error.
  */
 export function validateProfileInput(savingsBalance: number): string | null {
   if (!Number.isFinite(savingsBalance)) {
@@ -11,6 +14,9 @@ export function validateProfileInput(savingsBalance: number): string | null {
   }
   if (savingsBalance < 0) {
     return "Amounts can't be negative.";
+  }
+  if (roundToCents(savingsBalance) > MAX_AMOUNT) {
+    return MAX_AMOUNT_MESSAGE;
   }
   return null;
 }

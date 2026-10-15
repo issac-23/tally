@@ -13,6 +13,7 @@ import {
   type IncomeSource,
 } from "@/lib/utils/income";
 import { formatCurrency } from "@/lib/utils/format";
+import { MAX_INCOME_NAME_LENGTH } from "@/lib/utils/limits";
 import { recurrenceLabel } from "@/lib/utils/recurrence";
 import { useErrorShake } from "@/lib/hooks/use-error-shake";
 
@@ -175,6 +176,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Salary, freelance…"
+            maxLength={MAX_INCOME_NAME_LENGTH}
             required
             autoFocus
             className={FIELD_CLASS}

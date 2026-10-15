@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { GENERIC_ERROR } from "@/lib/utils/errors";
+import { canUseCategory } from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
   type TransactionInput,
@@ -31,13 +33,18 @@ export async function createTransaction(
     return { error: "You're not signed in." };
   }
 
+  if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
+    return { error: "That category isn't available. Pick another one." };
+  }
+
   const { error } = await supabase.from("transactions").insert({
     user_id: user.id,
     ...validated.fields,
   });
 
   if (error) {
-    return { error: error.message };
+    console.error("createTransaction failed:", error);
+    return { error: GENERIC_ERROR };
   }
 
   revalidatePath("/dashboard");

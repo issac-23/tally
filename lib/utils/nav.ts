@@ -12,3 +12,19 @@ export function isActiveRoute(pathname: string, href: string): boolean {
   if (href === "/") return false;
   return pathname.startsWith(href + "/");
 }
+
+/**
+ * Every route that needs a session. Each page also checks for itself, but the
+ * proxy turns signed-out visitors away before any of them render.
+ */
+export const PROTECTED_ROUTES = [
+  "/dashboard",
+  "/settings",
+  "/transactions",
+  "/onboarding",
+] as const;
+
+/** Same path-boundary rule as isActiveRoute: /settings/x yes, /settingsx no. */
+export function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_ROUTES.some((route) => isActiveRoute(pathname, route));
+}

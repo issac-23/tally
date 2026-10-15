@@ -12,6 +12,13 @@
  */
 
 import { isRecurrence, type Recurrence } from "./recurrence";
+import {
+  MAX_AMOUNT,
+  MAX_AMOUNT_MESSAGE,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_MERCHANT_LENGTH,
+  roundToCents,
+} from "./limits";
 
 export interface TransactionInput {
   amount: number | string;
@@ -49,7 +56,10 @@ export function validateTransactionInput(
   }
   // Money has two decimal places. Rounding here rather than rejecting keeps
   // a pasted "12.345" from bouncing the user back to the form.
-  const rounded = Math.round(amount * 100) / 100;
+  const rounded = roundToCents(amount);
+  if (rounded > MAX_AMOUNT) {
+    return { ok: false, error: MAX_AMOUNT_MESSAGE };
+  }
 
   if (!input.category_id) {
     return { ok: false, error: "Pick a category." };
@@ -72,15 +82,30 @@ export function validateTransactionInput(
     return { ok: false, error: "Pick how often this repeats." };
   }
 
+  // Empty strings become null so "no note" is one value in the database
+  // rather than two that render identically.
+  const description = blankToNull(input.description);
+  const merchant = blankToNull(input.merchant);
+  if (description && description.length > MAX_DESCRIPTION_LENGTH) {
+    return {
+      ok: false,
+      error: `Keep the note to ${MAX_DESCRIPTION_LENGTH} characters or fewer.`,
+    };
+  }
+  if (merchant && merchant.length > MAX_MERCHANT_LENGTH) {
+    return {
+      ok: false,
+      error: `Keep the merchant to ${MAX_MERCHANT_LENGTH} characters or fewer.`,
+    };
+  }
+
   return {
     ok: true,
     fields: {
       amount: rounded,
       category_id: input.category_id,
-      // Empty strings become null so "no note" is one value in the database
-      // rather than two that render identically.
-      description: blankToNull(input.description),
-      merchant: blankToNull(input.merchant),
+      description,
+      merchant,
       date: input.date,
       recurrence,
     },
