@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Pencil, Repeat } from "lucide-react";
+import { formatDayKey } from "@/lib/utils/calendar";
 import { formatCurrency } from "@/lib/utils/format";
 import { recurrenceBadge } from "@/lib/utils/recurrence";
 import { CategoryIcon } from "@/components/ui/category-icon";
@@ -25,10 +26,9 @@ interface TransactionRowProps {
 }
 
 export function TransactionRow({ transaction: t }: TransactionRowProps) {
-  const dateLabel = new Date(t.date).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  // Not `new Date(t.date)`: a bare YYYY-MM-DD parses as UTC midnight and
+  // reads as the day before anywhere west of Greenwich.
+  const dateLabel = formatDayKey(t.date);
 
   const badge = recurrenceBadge(t.recurrence);
   const primary = t.merchant || t.description || "—";

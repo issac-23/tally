@@ -53,6 +53,7 @@ export type Scenario =
   | "long"
   | "error"
   | "boom"
+  | "unreadable"
   | "signedout";
 
 export const SCENARIOS: readonly Scenario[] = [
@@ -66,6 +67,7 @@ export const SCENARIOS: readonly Scenario[] = [
   "long", // long names and large amounts, for layout
   "error", // every write fails
   "boom", // every read throws — for the error boundaries
+  "unreadable", // every read comes back as { error }, the way PostgREST reports one
   "signedout", // no session — lands on the landing page
 ] as const;
 
@@ -430,6 +432,11 @@ const WRITE_FAILURE = {
   code: "FX500",
 };
 
+const READ_FAILURE = {
+  message: "Fixture mode: simulated database read failure.",
+  code: "FX503",
+};
+
 /**
  * Properties the runtime probes on arbitrary objects. `createClient` is async,
  * so `await createClient()` reads `.then` on whatever it returns to decide
@@ -478,7 +485,8 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
     private readonly table: string,
     private readonly store: Store,
     private readonly failWrites: boolean,
-    private readonly failReads = false
+    private readonly failReads = false,
+    private readonly rejectReads = false
   ) {}
 
   select(columns = "*") {
@@ -566,6 +574,12 @@ class QueryBuilder implements PromiseLike<{ data: unknown; error: unknown }> {
 
     if (this.mode !== "select" && this.failWrites) {
       return { data: null, error: WRITE_FAILURE };
+    }
+
+    // The other way a read fails: the request completes and PostgREST says
+    // no. Nothing throws, so a caller that ignores `error` sees no rows.
+    if (this.mode === "select" && this.rejectReads) {
+      return { data: null, error: READ_FAILURE };
     }
 
     // Thrown, not returned: a dropped connection surfaces as an exception,
@@ -796,6 +810,7 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
   const store = getStore(scenario, base);
   const failWrites = base === "error";
   const failReads = base === "boom";
+  const rejectReads = base === "unreadable";
   const signedOut = base === "signedout";
 
   if (!globalForFixtures.__tallyFixtureWarned) {
@@ -844,7 +859,7 @@ export function createFixtureClient({ scenario }: FixtureClientOptions) {
       auth,
       from(table: string) {
         return guardUnsupported(
-          new QueryBuilder(table, store, failWrites, failReads),
+          new QueryBuilder(table, store, failWrites, failReads, rejectReads),
           `from("${table}")`
         );
       },

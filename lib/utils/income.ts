@@ -6,14 +6,15 @@
  * every month, a dividend twice a year.
  */
 
+import { monthKey } from "./calendar";
 import { RECURRENCE_OPTIONS, monthlyEquivalent } from "./recurrence";
-import { blankToNull, isIsoDate } from "./input";
 import {
-  MAX_AMOUNT_MESSAGE,
-  MAX_INCOME_NAME_LENGTH,
-  roundWithinCap,
-  tooLongMessage,
-} from "./limits";
+  optionalIsoDate,
+  positiveMoney,
+  recurrenceField,
+  requiredText,
+} from "./fields";
+import { MAX_INCOME_NAME_LENGTH } from "./limits";
 
 /**
  * The cadences income can have.
@@ -76,10 +77,6 @@ export function incomeByMonth(
   return schedule;
 }
 
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
 /** YYYY-MM-DD → YYYY-MM, without going through Date and its timezones. */
 function monthKeyOf(isoDate: string): string {
   return isoDate.slice(0, 7);
@@ -125,47 +122,40 @@ export type IncomeValidation =
  * back as a readable message instead of a Postgres error.
  */
 export function validateIncomeInput(input: IncomeInput): IncomeValidation {
-  const name = input.name.trim();
-  if (name === "") {
-    return { ok: false, error: "Give it a name." };
-  }
-  if (name.length > MAX_INCOME_NAME_LENGTH) {
-    return { ok: false, error: tooLongMessage("name", MAX_INCOME_NAME_LENGTH) };
-  }
+  const name = requiredText(
+    input.name,
+    MAX_INCOME_NAME_LENGTH,
+    "name",
+    "Give it a name."
+  );
+  if (!name.ok) return name;
 
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return { ok: false, error: "Amount must be greater than zero." };
-  }
-  const rounded = roundWithinCap(amount);
-  if (rounded === null) {
-    return { ok: false, error: MAX_AMOUNT_MESSAGE };
-  }
+  const amount = positiveMoney(input.amount);
+  if (!amount.ok) return amount;
 
-  if (!isIncomeRecurrence(input.recurrence)) {
-    return { ok: false, error: "Pick how often it's paid." };
-  }
+  const recurrence = recurrenceField(
+    input.recurrence,
+    "Pick how often it's paid.",
+    INCOME_RECURRENCE_OPTIONS
+  );
+  if (!recurrence.ok) return recurrence;
 
-  const startsOn = blankToNull(input.starts_on);
-  const endsOn = blankToNull(input.ends_on);
-  if (startsOn && !isIsoDate(startsOn)) {
-    return { ok: false, error: "That start date isn't a real date." };
-  }
-  if (endsOn && !isIsoDate(endsOn)) {
-    return { ok: false, error: "That end date isn't a real date." };
-  }
-  if (startsOn && endsOn && endsOn < startsOn) {
+  const startsOn = optionalIsoDate(input.starts_on, "That start date isn't a real date.");
+  if (!startsOn.ok) return startsOn;
+  const endsOn = optionalIsoDate(input.ends_on, "That end date isn't a real date.");
+  if (!endsOn.ok) return endsOn;
+  if (startsOn.value && endsOn.value && endsOn.value < startsOn.value) {
     return { ok: false, error: "It can't end before it starts." };
   }
 
   return {
     ok: true,
     fields: {
-      name,
-      amount: rounded,
-      recurrence: input.recurrence,
-      starts_on: startsOn,
-      ends_on: endsOn,
+      name: name.value,
+      amount: amount.value,
+      recurrence: recurrence.value,
+      starts_on: startsOn.value,
+      ends_on: endsOn.value,
     },
   };
 }

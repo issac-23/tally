@@ -3,7 +3,7 @@
  * No side effects, no Supabase, fully unit-testable.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+import { daysAgo } from "./calendar";
 
 interface CategoryRef {
   id: string;
@@ -171,27 +171,20 @@ export function comparePeriods(
   transactions: TxLike[],
   now: Date = new Date()
 ): PeriodComparison {
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const currentStart = todayStart.getTime() - 30 * DAY_MS;
-  const priorStart = todayStart.getTime() - 60 * DAY_MS;
+  const currentStart = daysAgo(now, 30);
+  const priorStart = daysAgo(now, 60);
 
   let current = 0;
   let prior = 0;
-
   for (const t of transactions) {
-    // YYYY-MM-DD parsed as local midnight (matches spending util semantics).
-    const [y, m, d] = t.date.split("-").map(Number);
-    const ts = new Date(y, m - 1, d).getTime();
+    // Day keys compare as text, so no date is parsed.
     const amount = Number(t.amount);
-
-    if (ts >= currentStart) {
+    if (t.date >= currentStart) {
       current += amount;
-    } else if (ts >= priorStart) {
+    } else if (t.date >= priorStart) {
       prior += amount;
     }
   }
-
   const deltaPercent =
     prior === 0 ? null : ((current - prior) / prior) * 100;
 

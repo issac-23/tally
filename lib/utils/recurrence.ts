@@ -8,6 +8,8 @@
  * your runway the day you log it.
  */
 
+import { DAYS_PER_MONTH } from "./calendar";
+
 export type Recurrence =
   | "once"
   | "daily"
@@ -28,7 +30,6 @@ export interface RecurrenceOption {
   perMonth: number;
 }
 
-const DAYS_PER_MONTH = 365.25 / 12;
 const WEEKS_PER_MONTH = DAYS_PER_MONTH / 7;
 
 export const RECURRENCE_OPTIONS: RecurrenceOption[] = [
