@@ -17,7 +17,7 @@ export function isActiveRoute(pathname: string, href: string): boolean {
  * Every route that needs a session. Each page also checks for itself, but the
  * proxy turns signed-out visitors away before any of them render.
  */
-export const PROTECTED_ROUTES = [
+const PROTECTED_ROUTES = [
   "/dashboard",
   "/settings",
   "/transactions",

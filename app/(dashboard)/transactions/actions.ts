@@ -3,8 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { GENERIC_ERROR } from "@/lib/utils/errors";
-import { canUseCategory } from "@/lib/supabase/categories";
+import { logAndFail } from "@/lib/utils/errors";
+import {
+  canUseCategory,
+  CATEGORY_UNAVAILABLE_MESSAGE,
+} from "@/lib/supabase/categories";
 import {
   validateTransactionInput,
   type TransactionInput,
@@ -39,8 +42,7 @@ export async function deleteTransaction(
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("deleteTransaction failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("deleteTransaction", error);
   }
 
   revalidatePath("/dashboard");
@@ -75,7 +77,7 @@ export async function updateTransaction(
   }
 
   if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
-    return { error: "That category isn't available. Pick another one." };
+    return { error: CATEGORY_UNAVAILABLE_MESSAGE };
   }
 
   // Same belt-and-braces as delete: RLS is the real boundary, the explicit
@@ -89,8 +91,7 @@ export async function updateTransaction(
     .select("id");
 
   if (error) {
-    console.error("updateTransaction failed:", error);
-    return { error: GENERIC_ERROR };
+    return logAndFail("updateTransaction", error);
   }
   if (!data || data.length === 0) {
     return { error: "That expense no longer exists." };
