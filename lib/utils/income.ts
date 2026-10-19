@@ -6,6 +6,7 @@
  * every month, a dividend twice a year.
  */
 
+import { monthKey } from "./calendar";
 import { RECURRENCE_OPTIONS, monthlyEquivalent } from "./recurrence";
 import {
   optionalIsoDate,
@@ -74,10 +75,6 @@ export function incomeByMonth(
     schedule.push(monthlyIncome(sources, month));
   }
   return schedule;
-}
-
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 /** YYYY-MM-DD → YYYY-MM, without going through Date and its timezones. */

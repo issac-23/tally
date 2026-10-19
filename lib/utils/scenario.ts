@@ -7,6 +7,8 @@
  * move through, and how to describe the result.
  */
 
+import { describeMonths } from "./calendar";
+
 /**
  * Upper bound for the spending slider.
  *
@@ -79,10 +81,5 @@ export function runwayDelta(
 
 /** "3.4 months" / "18 days" — matches the runway card's own phrasing. */
 export function formatMonthSpan(months: number): string {
-  if (months < 1) {
-    const days = Math.max(1, Math.round(months * 30));
-    return `${days} day${days === 1 ? "" : "s"}`;
-  }
-  const rounded = Math.round(months * 10) / 10;
-  return `${rounded} month${rounded === 1 ? "" : "s"}`;
+  return describeMonths(months, 1);
 }

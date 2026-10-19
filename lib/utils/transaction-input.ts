@@ -11,6 +11,7 @@
  * every rule testable without a database and keeps the actions thin.
  */
 
+import { today as todayKey } from "./calendar";
 import { type Recurrence } from "./recurrence";
 import {
   isoDate,
@@ -48,7 +49,7 @@ const MIN_DATE = "1900-01-01";
 
 export function validateTransactionInput(
   input: TransactionInput,
-  today: string = new Date().toISOString().slice(0, 10)
+  today: string = todayKey()
 ): ValidationResult {
   const amount = positiveMoney(input.amount);
   if (!amount.ok) return amount;

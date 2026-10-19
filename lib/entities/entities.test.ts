@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createFixtureClient, resetFixtureStores } from "@/lib/dev/fixtures";
 import { CATEGORY_UNAVAILABLE_MESSAGE } from "@/lib/supabase/categories";
 import { GENERIC_ERROR } from "@/lib/utils/errors";
+import { addDays, latestDayOnEarth } from "@/lib/utils/calendar";
 import { createTransaction, deleteTransaction, updateTransaction } from "./transaction";
 import { createIncomeSource, deleteIncomeSource } from "./income-source";
 import { createCategory, deleteCategory } from "./category";
@@ -97,6 +98,18 @@ describe("transaction writes", () => {
       expense
     );
     expect(raced).toEqual({ ok: false, error: CATEGORY_UNAVAILABLE_MESSAGE });
+  });
+
+  it("only calls a date future once no time zone has reached it", async () => {
+    const client = fixture("empty");
+    // A browser east of the server defaults to a day the server hasn't
+    // reached yet; that has to go through.
+    const edge = latestDayOnEarth();
+    expect((await createTransaction(client, USER_ID, { ...expense, date: edge })).ok).toBe(true);
+
+    expect(
+      await createTransaction(client, USER_ID, { ...expense, date: addDays(edge, 1) })
+    ).toEqual({ ok: false, error: "That date is in the future." });
   });
 
   it("hides a database failure behind the generic message", async () => {

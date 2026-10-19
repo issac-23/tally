@@ -44,6 +44,7 @@ import {
   projectSavings,
   type ProjectionScale,
 } from "@/lib/utils/projection";
+import { daysAgo } from "@/lib/utils/calendar";
 import { calculateRunway } from "@/lib/utils/runway";
 import { monthlyBurnRate, spendingSummary } from "@/lib/utils/spending";
 
@@ -130,7 +131,7 @@ export async function loadFinancialPicture(
     return { status: "needs-onboarding" };
   }
 
-  const comparisonStart = dayKeyDaysAgo(now, COMPARISON_WINDOW_DAYS);
+  const comparisonStart = daysAgo(now, COMPARISON_WINDOW_DAYS);
 
   const [income, recurring, window, recentRows] = await Promise.all([
     // Every source, not just the ones paying right now — a raise that starts
@@ -178,7 +179,7 @@ export async function loadFinancialPicture(
   const recurringRows = rows(recurring.data).map(toTransaction);
   const windowRows = rows(window.data).map(toTransaction);
 
-  const spendingStart = dayKeyDaysAgo(now, SPENDING_WINDOW_DAYS);
+  const spendingStart = daysAgo(now, SPENDING_WINDOW_DAYS);
   const last30 = windowRows.filter((t) => t.date >= spendingStart);
 
   const monthly = monthlyIncome(incomeSources, now);
@@ -204,22 +205,6 @@ export async function loadFinancialPicture(
       recent: rows(recentRows.data).map(toRecent),
     },
   };
-}
-
-// ------------------------------------------------------------------ windows
-
-/**
- * The local calendar day `days` before `now`, as YYYY-MM-DD.
- *
- * Calendar arithmetic, not milliseconds, so a daylight-saving change can't
- * move the cutoff a day. Local rather than UTC because that is how the
- * spending utilities read a stored date.
- */
-function dayKeyDaysAgo(now: Date, days: number): string {
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - days);
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${month}-${day}`;
 }
 
 // ------------------------------------------------------------- row narrowing

@@ -2,6 +2,7 @@
 
 import { Download } from "lucide-react";
 import type { TransactionRowData } from "@/components/dashboard/transaction-row";
+import { today } from "@/lib/utils/calendar";
 import { transactionsToCsv } from "@/lib/utils/csv";
 
 interface ExportTransactionsButtonProps {
@@ -19,7 +20,7 @@ export function ExportTransactionsButton({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `tally-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `tally-transactions-${today()}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
