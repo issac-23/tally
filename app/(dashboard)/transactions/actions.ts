@@ -1,103 +1,38 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { logAndFail } from "@/lib/utils/errors";
-import {
-  canUseCategory,
-  CATEGORY_UNAVAILABLE_MESSAGE,
-} from "@/lib/supabase/categories";
-import {
-  validateTransactionInput,
-  type TransactionInput,
-} from "@/lib/utils/transaction-input";
+import { runWrite } from "@/lib/entities/run-write";
+import * as transactions from "@/lib/entities/transaction";
+import type { TransactionInput } from "@/lib/utils/transaction-input";
 
 export interface DeleteTransactionResult {
   error?: string;
-}
-
-export async function deleteTransaction(
-  id: string
-): Promise<DeleteTransactionResult> {
-  if (!id) {
-    return { error: "Missing transaction id." };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You're not signed in." };
-  }
-
-  // RLS already restricts deletes to the owner, but the explicit user_id
-  // filter makes the intent obvious in the SQL and avoids any ambiguity.
-  const { error } = await supabase
-    .from("transactions")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  if (error) {
-    return logAndFail("deleteTransaction", error);
-  }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/transactions");
-  return {};
 }
 
 export interface UpdateTransactionResult {
   error?: string;
 }
 
+// Thin adapters over lib/entities/transaction; see settings/actions.ts.
+
+export async function deleteTransaction(
+  id: string
+): Promise<DeleteTransactionResult> {
+  const result = await runWrite((client, userId) =>
+    transactions.deleteTransaction(client, userId, id)
+  );
+  return result.ok ? {} : { error: result.error };
+}
+
 export async function updateTransaction(
   id: string,
   input: TransactionInput
 ): Promise<UpdateTransactionResult> {
-  if (!id) {
-    return { error: "Missing transaction id." };
+  const result = await runWrite((client, userId) =>
+    transactions.updateTransaction(client, userId, id, input)
+  );
+  if (!result.ok) {
+    return { error: result.error };
   }
-
-  const validated = validateTransactionInput(input);
-  if (!validated.ok) {
-    return { error: validated.error };
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You're not signed in." };
-  }
-
-  if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
-    return { error: CATEGORY_UNAVAILABLE_MESSAGE };
-  }
-
-  // Same belt-and-braces as delete: RLS is the real boundary, the explicit
-  // user_id filter states the intent. Without it a wrong id would report
-  // success against zero rows.
-  const { data, error } = await supabase
-    .from("transactions")
-    .update(validated.fields)
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select("id");
-
-  if (error) {
-    return logAndFail("updateTransaction", error);
-  }
-  if (!data || data.length === 0) {
-    return { error: "That expense no longer exists." };
-  }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/transactions");
   redirect("/transactions");
 }

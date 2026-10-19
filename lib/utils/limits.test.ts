@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MAX_AMOUNT_MESSAGE, roundWithinCap, tooLongMessage } from "./limits";
+import { MAX_AMOUNT_MESSAGE, roundWithinCap, rowLimitMessage, tooLongMessage } from "./limits";
 
 describe("limits", () => {
   it("states the amount cap the way people write it", () => {
@@ -14,5 +14,12 @@ describe("limits", () => {
 
   it("builds the length message", () => {
     expect(tooLongMessage("note", 200)).toBe("Keep the note to 200 characters or fewer.");
+  });
+});
+
+describe("rowLimitMessage", () => {
+  it("names the limit with a thousands separator", () => {
+    expect(rowLimitMessage(10_000, "expenses")).toBe("You've reached the limit of 10,000 expenses.");
+    expect(rowLimitMessage(50, "income sources")).toBe("You've reached the limit of 50 income sources.");
   });
 });
