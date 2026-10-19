@@ -9,7 +9,9 @@
 
 /** The largest value numeric(12, 2) can hold. */
 export const MAX_AMOUNT = 9_999_999_999.99;
-export const MAX_AMOUNT_MESSAGE = "Amount must be 9,999,999,999.99 or less.";
+export const MAX_AMOUNT_MESSAGE = `Amount must be ${MAX_AMOUNT.toLocaleString("en-US", {
+  minimumFractionDigits: 2,
+})} or less.`;
 
 /**
  * Money has two decimal places. Round before comparing to MAX_AMOUNT, not
@@ -20,6 +22,29 @@ export function roundToCents(amount: number): number {
   return Math.round(amount * 100) / 100;
 }
 
+/** The amount in cents, or null when that is more than MAX_AMOUNT. */
+export function roundWithinCap(amount: number): number | null {
+  const rounded = roundToCents(amount);
+  return rounded > MAX_AMOUNT ? null : rounded;
+}
+
 export const MAX_DESCRIPTION_LENGTH = 200;
 export const MAX_MERCHANT_LENGTH = 100;
 export const MAX_INCOME_NAME_LENGTH = 100;
+export const MAX_CATEGORY_NAME_LENGTH = 32;
+
+export function tooLongMessage(what: string, max: number): string {
+  return `Keep the ${what} to ${max} characters or fewer.`;
+}
+
+/**
+ * Per-user row caps, enforced by the triggers in migration 008. The database
+ * is the real limit; the numbers are here so the user is told what it is.
+ */
+export const MAX_TRANSACTIONS = 10_000;
+export const MAX_INCOME_SOURCES = 50;
+export const MAX_CATEGORIES = 100;
+
+export function rowLimitMessage(max: number, what: string): string {
+  return `You've reached the limit of ${max.toLocaleString("en-US")} ${what}.`;
+}

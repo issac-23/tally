@@ -1,3 +1,4 @@
+import { describeMonths } from "./calendar";
 import type { RunwayInfo, RunwayStatus } from "@/types";
 
 /**
@@ -32,12 +33,7 @@ export function runwayStatus(monthsRemaining: number): RunwayStatus {
  */
 export function runwayLabel(monthsRemaining: number): string {
   if (!isFinite(monthsRemaining)) return "Indefinite";
-  if (monthsRemaining < 1) {
-    const days = Math.max(0, Math.round(monthsRemaining * 30));
-    return `~${days} day${days === 1 ? "" : "s"} left`;
-  }
-  const rounded = Math.round(monthsRemaining * 10) / 10;
-  return `~${rounded} month${rounded === 1 ? "" : "s"} left`;
+  return `~${describeMonths(monthsRemaining, 0)} left`;
 }
 
 /**

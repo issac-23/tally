@@ -8,6 +8,8 @@
  * not a time series, so projecting forward is the only honest direction.
  */
 
+import { DAYS_PER_MONTH } from "./calendar";
+
 export interface ProjectionPoint {
   /**
    * Index of the point in the window. 0 = today. One step is `periodMonths`
@@ -45,12 +47,11 @@ export interface SavingsProjection {
 }
 
 const DEFAULT_PROJECTION_MONTHS = 12;
-const DAYS_PER_MONTH = 30.44;
 
 export interface ProjectSavingsOptions {
   /** How many points to plot after "now". */
   periods?: number;
-  /** Length of one step in months. 1 = monthly, 7/30.44 ≈ weekly. */
+  /** Length of one step in months. 1 = monthly, 7 / DAYS_PER_MONTH, about weekly. */
   periodMonths?: number;
 }
 

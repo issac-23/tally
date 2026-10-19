@@ -3,6 +3,7 @@
  * All amounts are positive numbers (expenses).
  */
 
+import { daysAgo } from "@/lib/utils/calendar";
 import {
   recurrenceOption,
   recurringMonthlyTotal,
@@ -13,31 +14,22 @@ interface AmountDated {
   date: string; // YYYY-MM-DD
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setTime(d.getTime() - n * DAY_MS);
-  return d;
-}
-
-function isOnOrAfter(dateStr: string, threshold: Date): boolean {
-  // YYYY-MM-DD must be parsed as local midnight to match the threshold's
-  // local-time semantics. `new Date("2026-05-15")` treats the string as
-  // UTC midnight, which would silently exclude "today" for any user
-  // in a timezone west of UTC.
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const local = new Date(year, month - 1, day);
-  return local.getTime() >= threshold.getTime();
+/** Whether a stored date sits inside the window that starts at `start`. */
+function isOnOrAfter(dateStr: string, start: string): boolean {
+  // Both are YYYY-MM-DD, which orders correctly as text. Nothing is parsed,
+  // so there's no UTC-midnight trap to fall into.
+  return dateStr >= start;
 }
 
 /**
  * Total spent in the last 30 days. Used as the baseline for runway math.
  * Returns 0 if there are no transactions in the window.
  */
-export function monthlyAverageSpend(transactions: AmountDated[]): number {
-  const cutoff = daysAgo(30);
+export function monthlyAverageSpend(
+  transactions: AmountDated[],
+  now: Date = new Date()
+): number {
+  const cutoff = daysAgo(now, 30);
   return transactions
     .filter((t) => isOnOrAfter(t.date, cutoff))
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -61,9 +53,10 @@ export function monthlyAverageSpend(transactions: AmountDated[]): number {
  */
 export function monthlyBurnRate(
   recentTransactions: Array<AmountDated & { recurrence?: string | null }>,
-  recurringTransactions: Parameters<typeof recurringMonthlyTotal>[0]
+  recurringTransactions: Parameters<typeof recurringMonthlyTotal>[0],
+  now: Date = new Date()
 ): number {
-  const cutoff = daysAgo(30);
+  const cutoff = daysAgo(now, 30);
 
   const oneOff = recentTransactions
     .filter((t) => recurrenceOption(t.recurrence).perMonth === 0)
@@ -76,14 +69,17 @@ export function monthlyBurnRate(
 /**
  * Today / this week (last 7 days) / this month (last 30 days) totals.
  */
-export function spendingSummary(transactions: AmountDated[]): {
+export function spendingSummary(
+  transactions: AmountDated[],
+  now: Date = new Date()
+): {
   today: number;
   this_week: number;
   this_month: number;
 } {
-  const todayStart = daysAgo(0);
-  const weekStart = daysAgo(7);
-  const monthStart = daysAgo(30);
+  const todayStart = daysAgo(now, 0);
+  const weekStart = daysAgo(now, 7);
+  const monthStart = daysAgo(now, 30);
 
   let today = 0;
   let thisWeek = 0;

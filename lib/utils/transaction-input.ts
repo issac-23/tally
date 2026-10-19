@@ -11,14 +11,15 @@
  * every rule testable without a database and keeps the actions thin.
  */
 
-import { isRecurrence, type Recurrence } from "./recurrence";
+import { today as todayKey } from "./calendar";
+import { type Recurrence } from "./recurrence";
 import {
-  MAX_AMOUNT,
-  MAX_AMOUNT_MESSAGE,
-  MAX_DESCRIPTION_LENGTH,
-  MAX_MERCHANT_LENGTH,
-  roundToCents,
-} from "./limits";
+  isoDate,
+  optionalText,
+  positiveMoney,
+  recurrenceField,
+} from "./fields";
+import { MAX_DESCRIPTION_LENGTH, MAX_MERCHANT_LENGTH } from "./limits";
 
 export interface TransactionInput {
   amount: number | string;
@@ -48,86 +49,48 @@ const MIN_DATE = "1900-01-01";
 
 export function validateTransactionInput(
   input: TransactionInput,
-  today: string = new Date().toISOString().slice(0, 10)
+  today: string = todayKey()
 ): ValidationResult {
-  const amount = Number(input.amount);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return { ok: false, error: "Amount must be greater than zero." };
-  }
-  // Money has two decimal places. Rounding here rather than rejecting keeps
-  // a pasted "12.345" from bouncing the user back to the form.
-  const rounded = roundToCents(amount);
-  if (rounded > MAX_AMOUNT) {
-    return { ok: false, error: MAX_AMOUNT_MESSAGE };
-  }
+  const amount = positiveMoney(input.amount);
+  if (!amount.ok) return amount;
 
   if (!input.category_id) {
     return { ok: false, error: "Pick a category." };
   }
 
-  if (!isIsoDate(input.date)) {
-    return { ok: false, error: "Pick a date." };
-  }
-  if (input.date > today) {
+  const date = isoDate(input.date, "Pick a date.");
+  if (!date.ok) return date;
+  if (date.value > today) {
     return { ok: false, error: "That date is in the future." };
   }
-  if (input.date < MIN_DATE) {
+  if (date.value < MIN_DATE) {
     return { ok: false, error: "That date is too far in the past." };
   }
 
   // Guarded here as well as by the CHECK constraint, so a bad value comes
   // back as a readable message instead of a Postgres constraint error.
-  const recurrence = input.recurrence ?? "once";
-  if (!isRecurrence(recurrence)) {
-    return { ok: false, error: "Pick how often this repeats." };
-  }
+  const recurrence = recurrenceField(
+    input.recurrence,
+    "Pick how often this repeats."
+  );
+  if (!recurrence.ok) return recurrence;
 
-  // Empty strings become null so "no note" is one value in the database
-  // rather than two that render identically.
-  const description = blankToNull(input.description);
-  const merchant = blankToNull(input.merchant);
-  if (description && description.length > MAX_DESCRIPTION_LENGTH) {
-    return {
-      ok: false,
-      error: `Keep the note to ${MAX_DESCRIPTION_LENGTH} characters or fewer.`,
-    };
-  }
-  if (merchant && merchant.length > MAX_MERCHANT_LENGTH) {
-    return {
-      ok: false,
-      error: `Keep the merchant to ${MAX_MERCHANT_LENGTH} characters or fewer.`,
-    };
-  }
+  const description = optionalText(input.description, MAX_DESCRIPTION_LENGTH, "note");
+  if (!description.ok) return description;
+  const merchant = optionalText(input.merchant, MAX_MERCHANT_LENGTH, "merchant");
+  if (!merchant.ok) return merchant;
 
   return {
     ok: true,
     fields: {
-      amount: rounded,
+      amount: amount.value,
       category_id: input.category_id,
-      description,
-      merchant,
-      date: input.date,
-      recurrence,
+      description: description.value,
+      merchant: merchant.value,
+      date: date.value,
+      recurrence: recurrence.value,
     },
   };
-}
-
-function blankToNull(value: string | null | undefined): string | null {
-  const trimmed = (value ?? "").trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-function isIsoDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return false;
-  }
-  // `new Date("2026-02-31")` rolls over to March rather than failing, so
-  // compare the round trip instead of trusting the parse.
-  const parsed = new Date(`${value}T00:00:00Z`);
-  return (
-    !Number.isNaN(parsed.getTime()) &&
-    parsed.toISOString().slice(0, 10) === value
-  );
 }
 
 /**

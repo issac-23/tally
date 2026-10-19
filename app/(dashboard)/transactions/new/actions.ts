@@ -1,14 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { GENERIC_ERROR } from "@/lib/utils/errors";
-import { canUseCategory } from "@/lib/supabase/categories";
-import {
-  validateTransactionInput,
-  type TransactionInput,
-} from "@/lib/utils/transaction-input";
+import { runWrite } from "@/lib/entities/run-write";
+import * as transactions from "@/lib/entities/transaction";
+import type { TransactionInput } from "@/lib/utils/transaction-input";
 
 export type CreateTransactionInput = TransactionInput;
 
@@ -16,38 +11,15 @@ export interface CreateTransactionResult {
   error?: string;
 }
 
+// A thin adapter over lib/entities/transaction; see settings/actions.ts.
 export async function createTransaction(
   input: CreateTransactionInput
 ): Promise<CreateTransactionResult> {
-  const validated = validateTransactionInput(input);
-  if (!validated.ok) {
-    return { error: validated.error };
+  const result = await runWrite((client, userId) =>
+    transactions.createTransaction(client, userId, input)
+  );
+  if (!result.ok) {
+    return { error: result.error };
   }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You're not signed in." };
-  }
-
-  if (!(await canUseCategory(supabase, user.id, validated.fields.category_id))) {
-    return { error: "That category isn't available. Pick another one." };
-  }
-
-  const { error } = await supabase.from("transactions").insert({
-    user_id: user.id,
-    ...validated.fields,
-  });
-
-  if (error) {
-    console.error("createTransaction failed:", error);
-    return { error: GENERIC_ERROR };
-  }
-
-  revalidatePath("/dashboard");
-  revalidatePath("/transactions");
   redirect("/dashboard");
 }
