@@ -2,12 +2,9 @@
  * Writing the user's profile: the savings balance, and finishing onboarding.
  */
 
+import { validateIncomeInput } from "@/lib/utils/income";
 import { validateProfileInput } from "@/lib/utils/profile";
-import {
-  MAX_AMOUNT_MESSAGE,
-  roundToCents,
-  roundWithinCap,
-} from "@/lib/utils/limits";
+import { roundToCents } from "@/lib/utils/limits";
 import { fail, failDb, ok, PAGES, type Client, type WriteResult } from "./write";
 
 export async function updateSavings(
@@ -44,11 +41,16 @@ export async function completeOnboarding(
 ): Promise<WriteResult> {
   const validationError = validateProfileInput(savingsBalance);
   if (validationError) return fail(validationError);
-  if (!Number.isFinite(monthlySalary) || monthlySalary < 0) {
-    return fail("Please enter valid numbers.");
-  }
-  const salary = roundWithinCap(monthlySalary);
-  if (salary === null) return fail(MAX_AMOUNT_MESSAGE);
+
+  // Onboarding still asks one question about income, because asking someone
+  // to model three sources before they've seen the app is too much. Nothing
+  // earned means nothing to add; anything else becomes an ordinary income
+  // source, so it has to pass the same rules as one.
+  const salary =
+    roundToCents(monthlySalary) === 0
+      ? null
+      : validateIncomeInput({ name: "Salary", amount: monthlySalary, recurrence: "monthly" });
+  if (salary && !salary.ok) return fail(salary.error);
 
   // Onboarding happens once. The page already sends an onboarded user to the
   // dashboard, but the action can be called directly, and a replay would add
@@ -82,16 +84,11 @@ export async function completeOnboarding(
     }
   }
 
-  // Onboarding still asks one question about income, because asking someone
-  // to model three sources before they've seen the app is too much. It
-  // becomes an ordinary income source they can edit or delete in Settings.
-  if (salary > 0) {
-    const { error: incomeError } = await client.from("income_sources").insert({
-      user_id: userId,
-      name: "Salary",
-      amount: salary,
-      recurrence: "monthly",
-    });
+  // It can be edited or deleted in Settings like any other.
+  if (salary) {
+    const { error: incomeError } = await client
+      .from("income_sources")
+      .insert({ user_id: userId, ...salary.fields });
     if (incomeError) return failDb("completeOnboarding", incomeError);
   }
 
