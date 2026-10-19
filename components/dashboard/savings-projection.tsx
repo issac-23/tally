@@ -1,12 +1,9 @@
-import {
-  projectionScale,
-  type ProjectionScale,
-  type SavingsProjection,
-} from "@/lib/utils/projection";
+import type { ProjectionScale } from "@/lib/utils/projection";
 import { ProjectionExplorer } from "@/components/dashboard/projection-explorer";
 
 interface SavingsProjectionSectionProps {
-  projection: SavingsProjection;
+  /** Picked from the real projection by the financial picture. */
+  scale: ProjectionScale;
   savings: number;
   monthlyIncome: number;
   incomeSchedule: number[];
@@ -26,15 +23,13 @@ interface SavingsProjectionSectionProps {
  * the ghost line and make the two impossible to compare.
  */
 export function SavingsProjectionSection({
-  projection,
+  scale,
   savings,
   monthlyIncome,
   incomeSchedule,
   monthlyAvgSpend,
   hasSpendingData = true,
 }: SavingsProjectionSectionProps) {
-  const scale = projectionScale(projection.depletionMonth);
-
   return (
     <ProjectionExplorer
       savings={savings}

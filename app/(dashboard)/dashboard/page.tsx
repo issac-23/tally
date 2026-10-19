@@ -6,25 +6,9 @@ import { RunwayCard } from "@/components/dashboard/runway-card";
 import { SavingsProjectionSection } from "@/components/dashboard/savings-projection";
 import { SpendingBreakdown } from "@/components/dashboard/spending-breakdown";
 import { CommittedPanel } from "@/components/dashboard/committed-panel";
-import {
-  TransactionRow,
-  type TransactionRowData,
-} from "@/components/dashboard/transaction-row";
+import { TransactionRow } from "@/components/dashboard/transaction-row";
 import { formatCurrency } from "@/lib/utils/format";
-import { calculateRunway } from "@/lib/utils/runway";
-import { projectSavings } from "@/lib/utils/projection";
-import { monthlyBurnRate, spendingSummary } from "@/lib/utils/spending";
-import { commitmentBreakdown } from "@/lib/utils/commitments";
-import {
-  incomeByMonth,
-  monthlyIncome,
-  type IncomeSource,
-} from "@/lib/utils/income";
-import {
-  groupByCategory,
-  groupByMerchant,
-  comparePeriods,
-} from "@/lib/utils/aggregation";
+import { loadFinancialPicture } from "@/lib/finance/financial-picture";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -36,114 +20,39 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("savings_balance, onboarded")
-    .eq("id", user.id)
-    .maybeSingle();
+  const result = await loadFinancialPicture(supabase, user.id);
 
-  if (!profile?.onboarded) {
+  if (result.status === "needs-onboarding") {
     redirect("/onboarding");
   }
+  if (result.status === "unavailable") {
+    // A failed read is not an empty account. Throwing hands it to
+    // dashboard/error.tsx, which says so and offers a retry, rather than
+    // drawing zeros that look like real numbers.
+    throw new Error("The financial picture could not be read.");
+  }
+
+  const {
+    savings,
+    monthlyIncome,
+    incomeSchedule,
+    burnRate,
+    hasSpendingData,
+    runway,
+    projectionScale,
+    spending: summary,
+    commitments,
+    categorySlices,
+    merchantSlices,
+    periodComparison,
+    recent,
+  } = result.picture;
 
   const displayName =
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
     user.email ||
     "there";
-
-  const savings = Number(profile.savings_balance);
-
-  // Every source, not just the ones paying right now — a raise that starts
-  // in three months still belongs in the projection.
-  const { data: incomeData } = await supabase
-    .from("income_sources")
-    .select("id, name, amount, recurrence, starts_on, ends_on")
-    .order("created_at", { ascending: true });
-
-  const incomeSources = (incomeData ?? []) as unknown as IncomeSource[];
-  const income = monthlyIncome(incomeSources);
-
-  // Pull last 30 days of transactions to compute the runway baseline.
-  const { data: recentTransactions } = await supabase
-    .from("transactions")
-    .select("amount, date, recurrence")
-    .gte(
-      "date",
-      daysAgoIso(30)
-    );
-
-  // Standing commitments count every month regardless of when they were last
-  // logged, so they can't be limited to the 30-day window — a yearly bill
-  // logged eight months ago is still owed.
-  const { data: recurringData } = await supabase
-    .from("transactions")
-    .select(
-      "amount, date, merchant, description, recurrence, category:categories(id, name, icon, color)"
-    )
-    .neq("recurrence", "once")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
-
-  const txs = recentTransactions ?? [];
-  // Supabase types the joined `category` as an array, but with a single FK
-  // it's always one row, so narrow it the same way the row list does.
-  const recurring = (recurringData ?? []) as unknown as Array<{
-    amount: number | string;
-    date: string;
-    merchant: string | null;
-    description: string | null;
-    recurrence: string | null;
-    category: { id: string; name: string; icon: string; color: string } | null;
-  }>;
-  // No spending in the window means no burn rate, which means the runway and
-  // projection have nothing real to say yet. Both cards switch to a
-  // needs-data state rather than reporting "infinite runway" as good news.
-  const hasSpendingData = txs.length > 0 || recurring.length > 0;
-  const burnRate = monthlyBurnRate(txs, recurring);
-  const runway = calculateRunway(savings, income, burnRate);
-  const incomeSchedule = incomeByMonth(incomeSources, 12);
-  const projection = projectSavings(savings, incomeSchedule, burnRate);
-  const summary = spendingSummary(txs);
-  const commitments = commitmentBreakdown(recurring, income);
-
-  // Latest 5 transactions with category info, for the "Recent" section.
-  // Supabase types the joined `category` as an array, but with a single FK it's
-  // always one row, so we narrow it for the row component.
-  const { data: recentData } = await supabase
-    .from("transactions")
-    .select(
-      "id, amount, description, merchant, date, recurrence, category:categories(id, name, icon, color)"
-    )
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const recent = (recentData ?? []) as unknown as TransactionRowData[];
-
-  // 60-day window with category + merchant, used for both donuts + delta.
-  const { data: txAggData } = await supabase
-    .from("transactions")
-    .select(
-      "amount, date, merchant, category:categories(id, name, icon, color)"
-    )
-    .gte(
-      "date",
-      daysAgoIso(60)
-    );
-
-  const txAgg = (txAggData ?? []) as unknown as Array<{
-    amount: number | string;
-    date: string;
-    merchant: string | null;
-    category: { id: string; name: string; icon: string; color: string } | null;
-  }>;
-  // Donuts and breakdowns only show the last 30 days of activity.
-  const last30Cutoff = daysAgoIso(30);
-  const last30 = txAgg.filter((t) => t.date >= last30Cutoff);
-  const categorySlices = groupByCategory(last30);
-  const merchantSlices = groupByMerchant(last30);
-  const periodComparison = comparePeriods(txAgg);
 
   return (
     <main className="px-4 py-6 sm:px-6 sm:py-10">
@@ -180,9 +89,9 @@ export default async function DashboardPage() {
           </div>
           <div className="lg:col-span-2">
             <SavingsProjectionSection
-              projection={projection}
+              scale={projectionScale}
               savings={savings}
-              monthlyIncome={income}
+              monthlyIncome={monthlyIncome}
               incomeSchedule={incomeSchedule}
               monthlyAvgSpend={burnRate}
               hasSpendingData={hasSpendingData}
@@ -256,12 +165,6 @@ export default async function DashboardPage() {
       </div>
     </main>
   );
-}
-
-function daysAgoIso(days: number) {
-  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
 }
 
 interface SummaryCardProps {
