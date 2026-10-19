@@ -1,21 +1,64 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Work_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 // Work Sans handles body, buttons, data points, labels, microcopy.
 // One font, multiple weights and sizes for the different roles.
-const workSans = Work_Sans({
+const workSans = localFont({
   variable: "--font-work-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  adjustFontFallback: "Arial",
+  src: [
+    {
+      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-600-normal.woff2",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-700-normal.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
 });
 
 // Playfair Display only on H1 / display headings via .font-display.
-const playfair = Playfair_Display({
+const playfair = localFont({
   variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["normal", "italic"],
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
+  src: [
+    {
+      path: "../node_modules/@fontsource/playfair-display/files/playfair-display-latin-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@fontsource/playfair-display/files/playfair-display-latin-400-italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../node_modules/@fontsource/playfair-display/files/playfair-display-latin-500-normal.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../node_modules/@fontsource/playfair-display/files/playfair-display-latin-500-italic.woff2",
+      weight: "500",
+      style: "italic",
+    },
+  ],
 });
 
 export const metadata: Metadata = {
