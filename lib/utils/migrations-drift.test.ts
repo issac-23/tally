@@ -108,7 +108,11 @@ describe("migration 008 against lib/utils/limits.ts", () => {
       knownDbError({ code: "23514", message }, { rowLimit: "capped" });
     // `%` placeholders are filled in by Postgres; the text before them is
     // what the mapping reads.
-    const rendered = messages.map((m) => m.replace("%", "transactions").replace("%", "10000"));
+    const fill = ["transactions", "10000"];
+    const rendered = messages.map((m) => {
+      let i = 0;
+      return m.replace(/%/g, () => fill[i++] ?? "%");
+    });
     expect(rendered.map(known).filter(Boolean)).toHaveLength(2);
   });
 });
