@@ -2,6 +2,10 @@ import type { createClient } from "@/lib/supabase/server";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
+/** What the actions say when canUseCategory turns a category down. */
+export const CATEGORY_UNAVAILABLE_MESSAGE =
+  "That category isn't available. Pick another one.";
+
 /**
  * Whether `userId` may file an expense under `categoryId`: a preset, or one
  * of their own.

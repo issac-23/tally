@@ -7,11 +7,12 @@
  */
 
 import { RECURRENCE_OPTIONS, monthlyEquivalent } from "./recurrence";
+import { blankToNull, isIsoDate } from "./input";
 import {
-  MAX_AMOUNT,
   MAX_AMOUNT_MESSAGE,
   MAX_INCOME_NAME_LENGTH,
-  roundToCents,
+  roundWithinCap,
+  tooLongMessage,
 } from "./limits";
 
 /**
@@ -129,18 +130,15 @@ export function validateIncomeInput(input: IncomeInput): IncomeValidation {
     return { ok: false, error: "Give it a name." };
   }
   if (name.length > MAX_INCOME_NAME_LENGTH) {
-    return {
-      ok: false,
-      error: `Keep the name to ${MAX_INCOME_NAME_LENGTH} characters or fewer.`,
-    };
+    return { ok: false, error: tooLongMessage("name", MAX_INCOME_NAME_LENGTH) };
   }
 
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) {
     return { ok: false, error: "Amount must be greater than zero." };
   }
-  const rounded = roundToCents(amount);
-  if (rounded > MAX_AMOUNT) {
+  const rounded = roundWithinCap(amount);
+  if (rounded === null) {
     return { ok: false, error: MAX_AMOUNT_MESSAGE };
   }
 
@@ -170,17 +168,4 @@ export function validateIncomeInput(input: IncomeInput): IncomeValidation {
       ends_on: endsOn,
     },
   };
-}
-
-function blankToNull(value: string | null | undefined): string | null {
-  const trimmed = (value ?? "").trim();
-  return trimmed === "" ? null : trimmed;
-}
-
-function isIsoDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const parsed = new Date(`${value}T00:00:00Z`);
-  return (
-    !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
-  );
 }
