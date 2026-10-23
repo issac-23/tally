@@ -40,9 +40,7 @@ export const MAX_CATEGORY_NAME_LENGTH = 32;
  * the in-memory store and the CHECK constraints agree.
  */
 export function textLength(text: string): number {
-  let count = 0;
-  for (const _ of text) count++;
-  return count;
+  return [...text].length;
 }
 
 export function tooLongMessage(what: string, max: number): string {
