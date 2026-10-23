@@ -16,6 +16,7 @@ import { blankToNull, isIsoDate } from "./input";
 import {
   MAX_AMOUNT_MESSAGE,
   roundWithinCap,
+  textLength,
   tooLongMessage,
 } from "./limits";
 import { isRecurrence, type Recurrence } from "./recurrence";
@@ -63,7 +64,7 @@ export function optionalText(
   what: string
 ): Field<string | null> {
   const value = blankToNull(input);
-  if (value && value.length > max) return invalid(tooLongMessage(what, max));
+  if (value && textLength(value) > max) return invalid(tooLongMessage(what, max));
   return { ok: true, value };
 }
 
@@ -76,7 +77,7 @@ export function requiredText(
 ): Field<string> {
   const value = input.trim();
   if (value === "") return invalid(missing);
-  if (value.length > max) return invalid(tooLongMessage(what, max));
+  if (textLength(value) > max) return invalid(tooLongMessage(what, max));
   return { ok: true, value };
 }
 

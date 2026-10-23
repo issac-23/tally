@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createFixtureClient, resetFixtureStores } from "@/lib/dev/fixtures";
+import {
+  createFixtureAuthClient,
+  createFixtureStore,
+  fixtureData,
+  resetFixtureStores,
+} from "@/lib/dev/fixtures";
 import { GENERIC_ERROR } from "@/lib/utils/errors";
 
 const state = vi.hoisted(() => ({ scenario: "new" }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => createFixtureClient({ scenario: state.scenario }),
+  createClient: async () => createFixtureAuthClient({ scenario: state.scenario }),
+  createStore: async () => createFixtureStore({ scenario: state.scenario }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 // The real redirect throws to unwind the action; so does this one.
@@ -18,9 +24,9 @@ vi.mock("next/navigation", () => ({
 import { completeOnboarding } from "./actions";
 
 async function salaries(): Promise<number> {
-  const supabase = createFixtureClient({ scenario: state.scenario });
-  const { data } = await supabase.from("income_sources").select("*");
-  return (data as Array<{ name: string }>).filter((row) => row.name === "Salary").length;
+  const sources = await createFixtureStore({ scenario: state.scenario }).incomeSources.list();
+  if (!sources.ok) throw new Error("read failed");
+  return sources.value.filter((row) => row.name === "Salary").length;
 }
 
 describe("completeOnboarding", () => {
@@ -66,9 +72,7 @@ describe("completeOnboarding", () => {
   it("hides the database's own error message", async () => {
     state.scenario = "error";
     // "error" is already onboarded; flip it so the write is attempted.
-    const supabase = createFixtureClient({ scenario: state.scenario });
-    const { data } = await supabase.from("profiles").select("*").maybeSingle();
-    (data as { onboarded: boolean }).onboarded = false;
+    fixtureData(state.scenario).profile!.onboarded = false;
 
     vi.spyOn(console, "error").mockImplementation(() => {});
     const result = await completeOnboarding(5000, 3000);

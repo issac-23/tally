@@ -5,15 +5,11 @@ import { completeOnboarding } from "./actions";
 
 interface OnboardingFormProps {
   initialSavings?: number;
-  initialSalary?: number;
 }
 
-export function OnboardingForm({
-  initialSavings = 0,
-  initialSalary = 0,
-}: OnboardingFormProps) {
+export function OnboardingForm({ initialSavings = 0 }: OnboardingFormProps) {
   const [savings, setSavings] = useState<number | string>(initialSavings || "");
-  const [salary, setSalary] = useState<number | string>(initialSalary || "");
+  const [salary, setSalary] = useState<number | string>("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

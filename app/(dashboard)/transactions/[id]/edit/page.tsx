@@ -1,10 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import {
-  ExpenseForm,
-  type EditableTransaction,
-} from "@/components/forms/expense-form";
+import { createClient, createStore } from "@/lib/supabase/server";
+import { orThrow } from "@/lib/store/types";
+import { ExpenseForm } from "@/components/forms/expense-form";
 
 export default async function EditTransactionPage({
   params,
@@ -22,20 +20,14 @@ export default async function EditTransactionPage({
     redirect("/");
   }
 
-  // Both queries are independent, so pay for one round trip rather than two.
-  const [{ data: transaction }, { data: categories }] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select("id, amount, category_id, description, merchant, date, recurrence")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("categories")
-      .select("id, name, icon, color, is_preset")
-      .order("is_preset", { ascending: false })
-      .order("name", { ascending: true }),
+  // Both reads are independent, so pay for one round trip rather than two.
+  const store = await createStore();
+  const [transactionResult, categoriesResult] = await Promise.all([
+    store.transactions.get(user.id, id),
+    store.categories.listVisible(),
   ]);
+  const transaction = orThrow(transactionResult);
+  const categories = orThrow(categoriesResult);
 
   // RLS means someone else's row reads as missing, which is the right
   // answer to show either way: a 404, not a "you can't see this".
@@ -65,8 +57,8 @@ export default async function EditTransactionPage({
 
         <div className="bg-[var(--color-surface-raised)] border border-[var(--color-border)] rounded p-6">
           <ExpenseForm
-            categories={categories ?? []}
-            transaction={transaction as unknown as EditableTransaction}
+            categories={categories}
+            transaction={transaction}
           />
         </div>
       </div>
