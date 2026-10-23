@@ -33,6 +33,7 @@ import {
   MAX_MERCHANT_LENGTH,
   MAX_TRANSACTIONS,
   roundToCents,
+  textLength,
 } from "@/lib/utils/limits";
 import { isRecurrence } from "@/lib/utils/recurrence";
 import type { TransactionFields } from "@/lib/utils/transaction-input";
@@ -233,10 +234,10 @@ export function createMemoryStore(options: MemoryOptions): Store {
   /** transactions_amount_range, _description_length, _merchant_length and 005's recurrence. */
   function transactionViolation(f: TransactionFields): StoreResult<never> | null {
     if (!(f.amount > 0 && f.amount <= MAX_AMOUNT)) return violates("transactions_amount_range");
-    if (f.description !== null && f.description.length > MAX_DESCRIPTION_LENGTH) {
+    if (f.description !== null && textLength(f.description) > MAX_DESCRIPTION_LENGTH) {
       return violates("transactions_description_length");
     }
-    if (f.merchant !== null && f.merchant.length > MAX_MERCHANT_LENGTH) {
+    if (f.merchant !== null && textLength(f.merchant) > MAX_MERCHANT_LENGTH) {
       return violates("transactions_merchant_length");
     }
     if (!isRecurrence(f.recurrence)) return violates("transactions_recurrence_check");
@@ -246,7 +247,7 @@ export function createMemoryStore(options: MemoryOptions): Store {
   function incomeViolation(f: IncomeFields): StoreResult<never> | null {
     if (!(f.amount > 0)) return violates("income_sources_amount_check");
     if (f.amount > MAX_AMOUNT) return violates("income_sources_amount_max");
-    if (f.name.length > MAX_INCOME_NAME_LENGTH) return violates("income_sources_name_length");
+    if (textLength(f.name) > MAX_INCOME_NAME_LENGTH) return violates("income_sources_name_length");
     if (!INCOME_RECURRENCE_OPTIONS.some((o) => o.value === f.recurrence)) {
       return violates("income_sources_recurrence_check");
     }
@@ -376,7 +377,7 @@ export function createMemoryStore(options: MemoryOptions): Store {
             return rowLimit();
           }
           // categories_name_length is a looser backstop than the app's 32.
-          if (fields.name.length > 50) return violates("categories_name_length");
+          if (textLength(fields.name) > 50) return violates("categories_name_length");
           // unique (user_id, name), compared exactly like Postgres does.
           if (data.categories.some((c) => c.user_id === userId && c.name === fields.name)) {
             return storeFailed({ kind: "duplicate" });

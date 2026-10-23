@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MAX_AMOUNT,
   MAX_CATEGORIES,
+  MAX_DESCRIPTION_LENGTH,
   MAX_INCOME_SOURCES,
   MAX_TRANSACTIONS,
 } from "@/lib/utils/limits";
@@ -90,6 +91,15 @@ describe("categories", () => {
 });
 
 describe("transactions", () => {
+  it("counts text in code points, like char_length", async () => {
+    const { store } = setup();
+    const atLimit = "😀".repeat(MAX_DESCRIPTION_LENGTH);
+    expect((await store.transactions.add(ME, expense({ description: atLimit }))).ok).toBe(true);
+    const over = await store.transactions.add(ME, expense({ description: atLimit + "😀" }));
+    expect(over.ok).toBe(false);
+    expect(JSON.stringify(over)).toContain("transactions_description_length");
+  });
+
   it("refuses a category the writer may not use, on insert and when it changes", async () => {
     const { store, data } = setup();
     expect(await store.transactions.add(ME, expense({ category_id: "theirs" }))).toEqual({
