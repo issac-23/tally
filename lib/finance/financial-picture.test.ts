@@ -1,13 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { createFixtureClient, resetFixtureStores } from "@/lib/dev/fixtures";
+import { createFixtureStore, resetFixtureStores } from "@/lib/dev/fixtures";
+import type { Store } from "@/lib/store/types";
 import { loadFinancialPicture, type FinancialPicture } from "./financial-picture";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 
-// The fixture client is a stand-in for the Supabase client, not a subtype of
-// it, so it is handed over as `never` (as lib/supabase/server.ts does).
 async function load(scenario: string, now?: Date) {
-  return loadFinancialPicture(createFixtureClient({ scenario }) as never, USER_ID, now);
+  return loadFinancialPicture(createFixtureStore({ scenario }), USER_ID, now);
 }
 
 async function ready(scenario: string, now?: Date): Promise<FinancialPicture> {
@@ -55,15 +54,12 @@ describe("loadFinancialPicture", () => {
 
   it("is unavailable when a read after the profile fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const client = createFixtureClient({ scenario: "full" });
-    // Fail every table except the profile, the way a partial outage would.
-    const failing = {
-      from(table: string) {
-        if (table === "profiles") return client.from(table);
-        return createFixtureClient({ scenario: "unreadable" }).from(table);
-      },
-    };
-    const result = await loadFinancialPicture(failing as never, USER_ID);
+    const healthy = createFixtureStore({ scenario: "full" });
+    const broken = createFixtureStore({ scenario: "unreadable" });
+    // Everything reads fine except the income sources, the way a partial
+    // outage would look.
+    const store: Store = { ...healthy, incomeSources: broken.incomeSources };
+    const result = await loadFinancialPicture(store, USER_ID);
     expect(result.status).toBe("unavailable");
   });
 

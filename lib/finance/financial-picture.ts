@@ -7,24 +7,21 @@
  * has a small interface (`loadFinancialPicture`) over that whole job, so the
  * page is layout and the rules live where they can be tested.
  *
- * Three things it owns that the page used to get wrong or leave implicit:
+ * Two things it owns that the page used to get wrong or leave implicit:
  *
  *  - One "now". It is read once per load and every window below is cut from
- *    it, so the query bounds, the in-memory filters and the utilities can't
+ *    it, so the read bound, the in-memory filters and the utilities can't
  *    disagree about when "the last 30 days" starts.
- *  - Failed reads. A Supabase read that fails resolves with `{ error }`
- *    instead of throwing, and treating that as "no rows" turned a failed
- *    income read into income of 0 and a false runway. Any failed read is
- *    `unavailable`, and a failed profile read is not `needs-onboarding`.
- *  - Row shapes. The client isn't typed against the schema, so rows are
- *    narrowed here, once, instead of cast at each call site.
+ *  - Failed reads. A read that fails used to resolve with `{ error }` and be
+ *    treated as "no rows", which turned a failed income read into income of 0
+ *    and a false runway. Any failed read is `unavailable`, and a failed
+ *    profile read is not `needs-onboarding`.
  *
- * The client is passed in rather than created here. Tests hand it the
- * fixture client directly, and it is the seam a store interface can replace
- * without touching the page or the maths.
+ * It reads through the Store interface, which is passed in: the Supabase
+ * adapter in production, the in-memory one in tests and dev fixtures.
  */
 
-import type { createClient } from "@/lib/supabase/server";
+import type { Store, TransactionRecord } from "@/lib/store/types";
 import type { RunwayInfo } from "@/types";
 import {
   groupByCategory,
@@ -33,22 +30,16 @@ import {
   type PeriodComparison,
   type Slice,
 } from "@/lib/utils/aggregation";
+import { daysAgo } from "@/lib/utils/calendar";
 import { commitmentBreakdown, type CommitmentSummary } from "@/lib/utils/commitments";
-import {
-  incomeByMonth,
-  monthlyIncome,
-  type IncomeSource,
-} from "@/lib/utils/income";
+import { incomeByMonth, monthlyIncome } from "@/lib/utils/income";
 import {
   projectionScale,
   projectSavings,
   type ProjectionScale,
 } from "@/lib/utils/projection";
-import { daysAgo } from "@/lib/utils/calendar";
 import { calculateRunway } from "@/lib/utils/runway";
 import { monthlyBurnRate, spendingSummary } from "@/lib/utils/spending";
-
-type Client = Awaited<ReturnType<typeof createClient>>;
 
 /** How far back the breakdowns and the burn rate look. */
 const SPENDING_WINDOW_DAYS = 30;
@@ -56,24 +47,6 @@ const SPENDING_WINDOW_DAYS = 30;
 const COMPARISON_WINDOW_DAYS = 60;
 const RECENT_COUNT = 5;
 const PROJECTION_MONTHS = 12;
-
-export interface CategoryRef {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-}
-
-/** A transaction as the dashboard's row list shows it. */
-export interface RecentTransaction {
-  id: string;
-  amount: number;
-  description: string | null;
-  merchant: string | null;
-  date: string;
-  recurrence: string | null;
-  category: CategoryRef | null;
-}
 
 export interface FinancialPicture {
   savings: number;
@@ -99,7 +72,7 @@ export interface FinancialPicture {
   categorySlices: Slice[];
   merchantSlices: Slice[];
   periodComparison: PeriodComparison;
-  recent: RecentTransaction[];
+  recent: TransactionRecord[];
 }
 
 export type FinancialPictureResult =
@@ -110,74 +83,44 @@ export type FinancialPictureResult =
   | { status: "unavailable" };
 
 export async function loadFinancialPicture(
-  client: Client,
+  store: Store,
   userId: string,
   now: Date = new Date()
 ): Promise<FinancialPictureResult> {
-  // Row-level security scopes the reads below to the signed-in user, so only
-  // the profile, which is keyed by user id, names one.
-  const profile = await client
-    .from("profiles")
-    .select("savings_balance, onboarded")
-    .eq("id", userId)
-    .maybeSingle();
-  if (profile.error) {
+  const profile = await store.profiles.get(userId);
+  if (!profile.ok) {
     // Not `needs-onboarding`: an onboarded user whose profile read fails
     // would be bounced into a flow that rejects them.
     console.error("loadFinancialPicture failed:", profile.error);
     return { status: "unavailable" };
   }
-  if (!profile.data?.onboarded) {
+  if (!profile.value?.onboarded) {
     return { status: "needs-onboarding" };
   }
 
-  const comparisonStart = daysAgo(now, COMPARISON_WINDOW_DAYS);
-
-  const [income, recurring, window, recentRows] = await Promise.all([
+  const [income, recurring, window, recent] = await Promise.all([
     // Every source, not just the ones paying right now — a raise that starts
     // in three months still belongs in the projection.
-    client
-      .from("income_sources")
-      .select("id, name, amount, recurrence, starts_on, ends_on")
-      .order("created_at", { ascending: true }),
+    store.incomeSources.list(),
     // Standing commitments count every month regardless of when they were
     // last logged, so they can't be limited to the window — a yearly bill
     // logged eight months ago is still owed.
-    client
-      .from("transactions")
-      .select(
-        "amount, date, merchant, description, recurrence, category:categories(id, name, icon, color)"
-      )
-      .neq("recurrence", "once")
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false }),
+    store.transactions.listRecurring(),
     // One read covers every window: the 30-day figures are a subset of it.
-    client
-      .from("transactions")
-      .select(
-        "amount, date, merchant, recurrence, category:categories(id, name, icon, color)"
-      )
-      .gte("date", comparisonStart),
-    client
-      .from("transactions")
-      .select(
-        "id, amount, description, merchant, date, recurrence, category:categories(id, name, icon, color)"
-      )
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(RECENT_COUNT),
+    store.transactions.listSince(daysAgo(now, COMPARISON_WINDOW_DAYS)),
+    store.transactions.listRecent(RECENT_COUNT),
   ]);
 
-  const failed = [income, recurring, window, recentRows].find((r) => r.error);
-  if (failed) {
-    console.error("loadFinancialPicture failed:", failed.error);
+  if (!income.ok || !recurring.ok || !window.ok || !recent.ok) {
+    const failed = [income, recurring, window, recent].find((r) => !r.ok);
+    console.error("loadFinancialPicture failed:", failed && !failed.ok && failed.error);
     return { status: "unavailable" };
   }
 
-  const savings = Number(profile.data.savings_balance);
-  const incomeSources = rows(income.data).map(toIncomeSource);
-  const recurringRows = rows(recurring.data).map(toTransaction);
-  const windowRows = rows(window.data).map(toTransaction);
+  const savings = profile.value.savings_balance;
+  const incomeSources = income.value;
+  const recurringRows = recurring.value;
+  const windowRows = window.value;
 
   const spendingStart = daysAgo(now, SPENDING_WINDOW_DAYS);
   const last30 = windowRows.filter((t) => t.date >= spendingStart);
@@ -202,63 +145,7 @@ export async function loadFinancialPicture(
       categorySlices: groupByCategory(last30),
       merchantSlices: groupByMerchant(last30),
       periodComparison: comparePeriods(windowRows, now),
-      recent: rows(recentRows.data).map(toRecent),
+      recent: recent.value,
     },
-  };
-}
-
-// ------------------------------------------------------------- row narrowing
-
-type Row = Record<string, unknown>;
-
-function rows(data: unknown): Row[] {
-  return Array.isArray(data) ? (data as Row[]) : [];
-}
-
-function text(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
-}
-
-/**
- * A joined `category` is one row through a single foreign key, but PostgREST's
- * typings describe it as an array and some responses really do wrap it. Take
- * the first either way.
- */
-function toCategory(value: unknown): CategoryRef | null {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (typeof raw !== "object" || raw === null) return null;
-  const c = raw as Row;
-  if (typeof c.id !== "string") return null;
-  return {
-    id: c.id,
-    name: text(c.name) ?? "",
-    icon: text(c.icon) ?? "tag",
-    color: text(c.color) ?? "#9CA3AF",
-  };
-}
-
-function toTransaction(row: Row) {
-  return {
-    amount: Number(row.amount),
-    date: String(row.date),
-    merchant: text(row.merchant),
-    description: text(row.description),
-    recurrence: text(row.recurrence),
-    category: toCategory(row.category),
-  };
-}
-
-function toRecent(row: Row): RecentTransaction {
-  return { id: String(row.id), ...toTransaction(row) };
-}
-
-function toIncomeSource(row: Row): IncomeSource {
-  return {
-    id: String(row.id),
-    name: String(row.name),
-    amount: Number(row.amount),
-    recurrence: String(row.recurrence),
-    starts_on: text(row.starts_on),
-    ends_on: text(row.ends_on),
   };
 }

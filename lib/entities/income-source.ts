@@ -2,7 +2,7 @@
 
 import { MAX_INCOME_SOURCES, rowLimitMessage } from "@/lib/utils/limits";
 import { validateIncomeInput, type IncomeInput } from "@/lib/utils/income";
-import { fail, failDb, ok, PAGES, type Client, type WriteResult } from "./write";
+import { fail, failStore, ok, PAGES, type Store, type WriteResult } from "./write";
 
 const MESSAGES = {
   rowLimit: rowLimitMessage(MAX_INCOME_SOURCES, "income sources"),
@@ -15,35 +15,28 @@ function changed(): WriteResult {
 }
 
 export async function createIncomeSource(
-  client: Client,
+  store: Store,
   userId: string,
   input: IncomeInput
 ): Promise<WriteResult> {
   const validated = validateIncomeInput(input);
   if (!validated.ok) return fail(validated.error);
 
-  const { error } = await client
-    .from("income_sources")
-    .insert({ user_id: userId, ...validated.fields });
-  if (error) return failDb("createIncomeSource", error, MESSAGES);
+  const added = await store.incomeSources.add(userId, validated.fields);
+  if (!added.ok) return failStore("createIncomeSource", added.error, MESSAGES);
 
   return changed();
 }
 
 export async function deleteIncomeSource(
-  client: Client,
+  store: Store,
   userId: string,
   id: string
 ): Promise<WriteResult> {
   if (!id) return fail("Missing income source id.");
 
-  // RLS is the real boundary; the explicit user_id filter states the intent.
-  const { error } = await client
-    .from("income_sources")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
-  if (error) return failDb("deleteIncomeSource", error);
+  const removed = await store.incomeSources.remove(userId, id);
+  if (!removed.ok) return failStore("deleteIncomeSource", removed.error);
 
   return changed();
 }

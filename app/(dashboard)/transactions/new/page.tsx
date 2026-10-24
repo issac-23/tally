@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createStore } from "@/lib/supabase/server";
+import { orThrow } from "@/lib/store/types";
 import { ExpenseForm } from "@/components/forms/expense-form";
 
 export default async function NewTransactionPage() {
@@ -13,13 +14,8 @@ export default async function NewTransactionPage() {
     redirect("/");
   }
 
-  // Fetch categories visible to this user (presets + their own).
-  // RLS on the categories table enforces this; the order keeps presets first.
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("id, name, icon, color, is_preset")
-    .order("is_preset", { ascending: false })
-    .order("name", { ascending: true });
+  // Categories visible to this user (presets + their own), presets first.
+  const categories = orThrow(await (await createStore()).categories.listVisible());
 
   return (
     <main className="px-6 py-10">

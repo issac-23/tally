@@ -16,6 +16,11 @@ describe("validateCategoryInput", () => {
     expect(validateCategoryInput("x".repeat(33), "#112233").ok).toBe(false);
   });
 
+  it("counts an emoji as one character", () => {
+    expect(validateCategoryInput("😀".repeat(32), "#112233").ok).toBe(true);
+    expect(validateCategoryInput("😀".repeat(33), "#112233").ok).toBe(false);
+  });
+
   it("wants a six-digit hex colour", () => {
     expect(validateCategoryInput("Pets", "#123").ok).toBe(false);
     expect(validateCategoryInput("Pets", "112233").ok).toBe(false);

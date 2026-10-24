@@ -60,6 +60,15 @@ describe("text", () => {
     });
   });
 
+  it("counts an emoji as one character, the way char_length does", () => {
+    const atLimit = "😀".repeat(10);
+    expect(atLimit.length).toBe(20);
+    expect(optionalText(atLimit, 10, "note")).toEqual({ ok: true, value: atLimit });
+    expect(requiredText(atLimit, 10, "name", "-")).toEqual({ ok: true, value: atLimit });
+    expect(optionalText(atLimit + "😀", 10, "note").ok).toBe(false);
+    expect(requiredText(atLimit + "😀", 10, "name", "-").ok).toBe(false);
+  });
+
   it("requires text once trimmed", () => {
     expect(requiredText("  ", 10, "name", "Give it a name.")).toEqual({
       ok: false,

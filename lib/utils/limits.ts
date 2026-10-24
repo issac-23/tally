@@ -33,6 +33,16 @@ export const MAX_MERCHANT_LENGTH = 100;
 export const MAX_INCOME_NAME_LENGTH = 100;
 export const MAX_CATEGORY_NAME_LENGTH = 32;
 
+/**
+ * Text length as Postgres counts it: char_length() is code points, while
+ * String#length is UTF-16 code units, so an emoji is 1 here and 2 there.
+ * Every length check against the limits above goes through this so the app,
+ * the in-memory store and the CHECK constraints agree.
+ */
+export function textLength(text: string): number {
+  return [...text].length;
+}
+
 export function tooLongMessage(what: string, max: number): string {
   return `Keep the ${what} to ${max} characters or fewer.`;
 }

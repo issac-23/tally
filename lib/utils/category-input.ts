@@ -1,4 +1,4 @@
-import { MAX_CATEGORY_NAME_LENGTH } from "./limits";
+import { MAX_CATEGORY_NAME_LENGTH, textLength } from "./limits";
 
 const MIN_NAME_LENGTH = 2;
 
@@ -26,7 +26,7 @@ export function validateCategoryInput(
   if (trimmed.length < MIN_NAME_LENGTH) {
     return { ok: false, error: `Category name must be at least ${MIN_NAME_LENGTH} characters.` };
   }
-  if (trimmed.length > MAX_CATEGORY_NAME_LENGTH) {
+  if (textLength(trimmed) > MAX_CATEGORY_NAME_LENGTH) {
     return {
       ok: false,
       error: `Category name must be ${MAX_CATEGORY_NAME_LENGTH} characters or fewer.`,
