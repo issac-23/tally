@@ -5,7 +5,8 @@ at your current spending rate. Sign in with Google, log expenses, and
 see your runway projected forward 12 months with a dotted line marking
 when you'd hit zero.
 
-**Live demo:** https://tally-issac.vercel.app
+**Live demo:** https://tally-issac.vercel.app (click "Try the demo" to look
+around a sample account without signing in)
 
 ![tally screenshot](./tally-screenshot.png)
 
@@ -52,6 +53,16 @@ app-layer filtering.
   with a list of progress bars
 - Settings page to update savings and salary at any time
 - Responsive layout for mobile and desktop
+
+**The demo**
+
+- "Try the demo" opens a read-only sample account, so nobody has to sign in
+  to see the app. Its dates are worked out from today, so the runway and
+  projection are always populated
+- Changes are turned down with a message, and the demo never talks to
+  Supabase, so there is no demo data to clean up or leak
+- A signed-in user always sees their own account, even if they opened the
+  demo first
 
 ![tally dashboard breakdowns](./tally-dashboard.png)
 

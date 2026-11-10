@@ -11,9 +11,9 @@
  *
  * The seam now sits here. There are two adapters. The Supabase adapter
  * (supabase-store.ts) speaks PostgREST and turns Postgres' answers into the
- * results below. The in-memory adapter (lib/dev/memory-store.ts) is a plain
+ * results below. The in-memory adapter (lib/store/memory-store.ts) is a plain
  * store that enforces the same rules the migrations do, and backs the dev
- * fixtures and the tests. Neither leaks into the callers: a duplicate name is
+ * fixtures, the public demo and the tests. Neither leaks into the callers: a duplicate name is
  * `{ kind: "duplicate" }`, not a code to look up.
  *
  * Row-level security scopes every read to the signed-in user, so reads take
@@ -61,6 +61,8 @@ export type StoreError =
   | { kind: "row-limit" }
   /** An expense filed under a category its owner may not use (migration 008). */
   | { kind: "category-unavailable" }
+  /** The store is the public demo's, and nothing written to it is kept. */
+  | { kind: "read-only" }
   /** Anything else: a dropped connection, RLS, a CHECK constraint. Not for users. */
   | { kind: "failed"; cause: unknown };
 

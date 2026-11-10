@@ -1,15 +1,13 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { resolveSession } from "@/lib/session";
 import { SignInButton } from "@/components/ui/sign-in-button";
 import { Logo } from "@/components/ui/logo";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
+  // Only a real session skips the landing page. A demo visitor who comes
+  // back here is leaving the demo, and should see the way in again.
+  const session = await resolveSession();
+  if (session.kind === "user") {
     redirect("/dashboard");
   }
 
@@ -36,6 +34,18 @@ export default async function Home() {
           </p>
 
           <SignInButton />
+
+          {/* A plain anchor and not a Link: following it sets a cookie, which
+              a prefetch must not do. */}
+          <a
+            href="/demo"
+            className="block w-full rounded border border-[var(--color-border-strong)] px-4 py-3 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-surface)]"
+          >
+            Try the demo
+          </a>
+          <p className="text-xs text-[var(--color-foreground-muted)]">
+            A look around a sample account. No sign-in, nothing is saved.
+          </p>
         </div>
 
         {/* Footer */}

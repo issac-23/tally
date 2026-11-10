@@ -1,5 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  DEMO_COOKIE,
+  hasSupabaseAuthCookie,
+  isDemoCookie,
+} from "@/lib/demo/cookie";
 import { isProtectedRoute } from "@/lib/utils/nav";
 
 export async function updateSession(request: NextRequest) {
@@ -22,6 +27,22 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/";
       return NextResponse.redirect(url);
     }
+    return supabaseResponse;
+  }
+
+  // The public demo. The demo cookie is not a credential: forging it only
+  // ever yields the demo, because the demo path never builds a Supabase
+  // client and reads nothing but seed data (see lib/session.ts). So it is
+  // enough to let the request through the route guard.
+  //
+  // With no Supabase auth cookie there is no session to refresh either, so
+  // skip the Supabase call entirely. With one, carry on as usual: a real
+  // session beats the demo, and resolveSession decides which the page gets.
+  const demo = isDemoCookie(request.cookies.get(DEMO_COOKIE)?.value);
+  if (
+    demo &&
+    !hasSupabaseAuthCookie(request.cookies.getAll().map((c) => c.name))
+  ) {
     return supabaseResponse;
   }
 
@@ -50,8 +71,10 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect signed-in routes — redirect unauthenticated users to home
-  if (!user && isProtectedRoute(request.nextUrl.pathname)) {
+  // Protect signed-in routes: redirect unauthenticated users to home. A
+  // demo visitor whose Supabase cookie has gone stale is let through, to
+  // the demo.
+  if (!user && !demo && isProtectedRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

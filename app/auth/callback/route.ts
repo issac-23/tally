@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DEMO_COOKIE } from "@/lib/demo/cookie";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -15,7 +16,12 @@ export async function GET(request: Request) {
     // userinfo and sends the user to evil.example. Nothing in the app sets
     // `next`, so there's nothing to sanitise; it's simply gone.
     if (!error) {
-      return NextResponse.redirect(`${origin}/dashboard`);
+      const response = NextResponse.redirect(`${origin}/dashboard`);
+      // A real session beats the demo cookie anyway, but there is no reason
+      // to keep it once they've signed in, and it would bring the demo back
+      // the moment they signed out.
+      response.cookies.delete(DEMO_COOKIE);
+      return response;
     }
   }
 

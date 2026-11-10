@@ -9,9 +9,16 @@ import { GENERIC_ERROR } from "@/lib/utils/errors";
 
 const state = vi.hoisted(() => ({ scenario: "new" }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => createFixtureAuthClient({ scenario: state.scenario }),
-  createStore: async () => createFixtureStore({ scenario: state.scenario }),
+vi.mock("@/lib/session", () => ({
+  resolveSession: async () => {
+    const client = createFixtureAuthClient({ scenario: state.scenario });
+    const {
+      data: { user },
+    } = await client.auth.getUser();
+    return user
+      ? { kind: "user", user, store: createFixtureStore({ scenario: state.scenario }) }
+      : { kind: "anonymous" };
+  },
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 // The real redirect throws to unwind the action; so does this one.

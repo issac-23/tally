@@ -35,7 +35,7 @@
  *
  * ## Keeping it honest
  *
- * The data is a plain in-memory store (lib/dev/memory-store.ts) that enforces
+ * The data is a plain in-memory store (lib/store/memory-store.ts) that enforces
  * the same rules as the migrations: unique category names, the per-user row
  * caps, category ownership, the CHECK constraints. It sits behind the same
  * Store interface as the Supabase adapter, so there is no query language to
@@ -82,7 +82,7 @@ import {
   type IncomeSourceRow,
   type MemoryData,
   type TransactionRow,
-} from "./memory-store";
+} from "@/lib/store/memory-store";
 
 const USER_ID = "00000000-0000-4000-8000-000000000001";
 

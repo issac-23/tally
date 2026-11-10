@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { createClient, createStore } from "@/lib/supabase/server";
+import { resolveSession } from "@/lib/session";
 import { orThrow } from "@/lib/store/types";
 import { ExpenseForm } from "@/components/forms/expense-form";
 
@@ -11,17 +11,13 @@ export default async function EditTransactionPage({
 }) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await resolveSession();
+  if (session.kind === "anonymous") {
     redirect("/");
   }
+  const { user, store } = session;
 
   // Both reads are independent, so pay for one round trip rather than two.
-  const store = await createStore();
   const [transactionResult, categoriesResult] = await Promise.all([
     store.transactions.get(user.id, id),
     store.categories.listVisible(),
