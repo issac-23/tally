@@ -13,7 +13,7 @@ const navItems = [
   { href: "/settings", label: "Settings" },
 ] as const;
 
-export function TopNav() {
+export function TopNav({ demo = false }: { demo?: boolean }) {
   const pathname = usePathname();
   const activeHref =
     navItems.find((item) => isActiveRoute(pathname, item.href))?.href ?? null;
@@ -32,7 +32,7 @@ export function TopNav() {
           </nav>
 
           <div className="shrink-0">
-            <SignOutButton />
+            <SignOutButton demo={demo} />
           </div>
         </div>
 

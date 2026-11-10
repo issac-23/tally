@@ -34,6 +34,18 @@ export default async function Home() {
           </p>
 
           <SignInButton />
+
+          {/* A plain anchor and not a Link: following it sets a cookie, which
+              a prefetch must not do. */}
+          <a
+            href="/demo"
+            className="block w-full rounded border border-[var(--color-border-strong)] px-4 py-3 text-sm font-medium text-[var(--color-foreground)] transition-colors hover:bg-[var(--color-surface)]"
+          >
+            Try the demo
+          </a>
+          <p className="text-xs text-[var(--color-foreground-muted)]">
+            A look around a sample account. No sign-in, nothing is saved.
+          </p>
         </div>
 
         {/* Footer */}
