@@ -22,6 +22,28 @@ describe("GET /demo", () => {
   });
 });
 
+describe("GET /demo when already signed in", () => {
+  it("sets no demo cookie and goes to the dashboard", async () => {
+    const response = await enter(
+      new Request("http://localhost:3000/demo", {
+        headers: { cookie: "theme=dark; sb-abcd-auth-token.0=x" },
+      })
+    );
+
+    expect(new URL(response.headers.get("location")!).pathname).toBe("/dashboard");
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("still sets the cookie when the only Supabase cookie is a sign-in leftover", async () => {
+    const response = await enter(
+      new Request("http://localhost:3000/demo", {
+        headers: { cookie: "sb-abcd-auth-token-code-verifier=x" },
+      })
+    );
+    expect(response.headers.get("set-cookie")).toMatch(/^tally_demo=1;/);
+  });
+});
+
 describe("GET /demo/exit", () => {
   it("clears the cookie and goes back to the landing page", async () => {
     const response = await exit(new Request("http://localhost:3000/demo/exit"));

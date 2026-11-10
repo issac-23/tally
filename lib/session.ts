@@ -19,11 +19,7 @@
 import { cache } from "react";
 import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
-import {
-  DEMO_COOKIE,
-  hasSupabaseAuthCookie,
-  isDemoCookie,
-} from "@/lib/demo/cookie";
+import { classifyVisitor } from "@/lib/demo/cookie";
 import { DEMO_USER_ID } from "@/lib/demo/data";
 import { createReadOnlyDemoStore } from "@/lib/demo/read-only-store";
 import { fixturesEnabled, getSignedIn } from "@/lib/supabase/server";
@@ -73,9 +69,7 @@ export async function resolveVisitor(deps: SessionDeps): Promise<Session> {
 export const resolveSession = cache(async (): Promise<Session> => {
   const jar = await cookies();
   return resolveVisitor({
-    mightHaveSession:
-      fixturesEnabled() || hasSupabaseAuthCookie(jar.getAll().map((c) => c.name)),
-    demoRequested: isDemoCookie(jar.get(DEMO_COOKIE)?.value),
+    ...classifyVisitor(jar.getAll(), fixturesEnabled()),
     signedIn: getSignedIn,
     demoStore: () => createReadOnlyDemoStore(),
   });

@@ -45,6 +45,16 @@ describe("updateSession", () => {
     expect(supabase.createServerClient).not.toHaveBeenCalled();
   });
 
+  it("never builds a Supabase client for a visitor with no auth cookie", async () => {
+    expect(redirectedTo(await updateSession(request("/dashboard")))).toBe("/");
+    expect(redirectedTo(await updateSession(request("/settings", "theme=dark")))).toBe("/");
+    expect(redirectedTo(await updateSession(request("/")))).toBeNull();
+    expect(
+      redirectedTo(await updateSession(request("/dashboard", "sb-abcd-auth-token-code-verifier=x")))
+    ).toBe("/");
+    expect(supabase.createServerClient).not.toHaveBeenCalled();
+  });
+
   it("does not take another value for the demo cookie", async () => {
     const response = await updateSession(request("/dashboard", "tally_demo=yes"));
     expect(redirectedTo(response)).toBe("/");

@@ -39,3 +39,27 @@ export function hasSupabaseAuthCookie(names: Iterable<string>): boolean {
   }
   return false;
 }
+
+export interface VisitorCookies {
+  /** A Supabase session could exist: an auth cookie is there, or fixtures stand in for Supabase. */
+  mightHaveSession: boolean;
+  demoRequested: boolean;
+}
+
+/**
+ * The one place that reads a request's cookies to decide who might be
+ * looking: used by the route guard and by resolveSession, so they cannot
+ * disagree. `fixtures` is the dev fixtures flag, which counts as a possible
+ * session because the fixture store answers in Supabase's place.
+ */
+export function classifyVisitor(
+  cookies: Iterable<{ name: string; value: string }>,
+  fixtures = false
+): VisitorCookies {
+  const all = [...cookies];
+  return {
+    mightHaveSession:
+      fixtures || hasSupabaseAuthCookie(all.map((c) => c.name)),
+    demoRequested: isDemoCookie(all.find((c) => c.name === DEMO_COOKIE)?.value),
+  };
+}
