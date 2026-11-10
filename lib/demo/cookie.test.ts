@@ -10,6 +10,8 @@ describe("hasSupabaseAuthCookie", () => {
   it("does not take the sign-in leftovers or other cookies for a session", () => {
     expect(hasSupabaseAuthCookie([])).toBe(false);
     expect(hasSupabaseAuthCookie(["sb-abcd-auth-token-code-verifier"])).toBe(false);
+    expect(hasSupabaseAuthCookie(["sb-abcd-auth-token-flows-code-verifier"])).toBe(false);
+    expect(hasSupabaseAuthCookie(["sb-abcd-auth-token-flow-1f2e-code-verifier"])).toBe(false);
     expect(hasSupabaseAuthCookie(["tally_demo", "theme"])).toBe(false);
     expect(hasSupabaseAuthCookie(["not-sb-abcd-auth-token"])).toBe(false);
   });

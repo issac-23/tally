@@ -71,7 +71,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect signed-in routes — redirect unauthenticated users to home. A
+  // Protect signed-in routes: redirect unauthenticated users to home. A
   // demo visitor whose Supabase cookie has gone stale is let through, to
   // the demo.
   if (!user && !demo && isProtectedRoute(request.nextUrl.pathname)) {
