@@ -1,9 +1,9 @@
 /**
  * An in-memory store that behaves like the database behind the real one.
  *
- * It backs the dev fixtures and the tests, and it holds itself to the rules
- * the migrations enforce, so a flow that works here can't be one the real
- * database would turn down:
+ * It backs the dev fixtures, the public demo and the tests, and it holds
+ * itself to the rules the migrations enforce, so a flow that works here
+ * can't be one the real database would turn down:
  *
  *  - a category name is unique per user, compared exactly (not case-folded);
  *  - each user has at most MAX_TRANSACTIONS / MAX_INCOME_SOURCES /
