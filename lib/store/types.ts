@@ -61,6 +61,8 @@ export type StoreError =
   | { kind: "row-limit" }
   /** An expense filed under a category its owner may not use (migration 008). */
   | { kind: "category-unavailable" }
+  /** The store is the public demo's, and nothing written to it is kept. */
+  | { kind: "read-only" }
   /** Anything else: a dropped connection, RLS, a CHECK constraint. Not for users. */
   | { kind: "failed"; cause: unknown };
 

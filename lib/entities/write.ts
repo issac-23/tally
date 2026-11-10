@@ -31,6 +31,9 @@ export type WriteResult =
 
 export const NOT_SIGNED_IN = "You're not signed in.";
 
+/** What the demo says to any change, since it keeps none. */
+export const DEMO_READ_ONLY = "This is a demo, so changes aren't saved.";
+
 /** Where the data each page draws on comes from, in one place. */
 export const PAGES = {
   dashboard: { path: "/dashboard" },
@@ -70,5 +73,6 @@ export function failStore(
   if (error.kind === "duplicate" && messages.duplicate) return fail(messages.duplicate);
   if (error.kind === "row-limit" && messages.rowLimit) return fail(messages.rowLimit);
   if (error.kind === "category-unavailable") return fail(CATEGORY_UNAVAILABLE_MESSAGE);
+  if (error.kind === "read-only") return fail(DEMO_READ_ONLY);
   return { ok: false, ...logAndFail(action, error.kind === "failed" ? error.cause : error) };
 }
