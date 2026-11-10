@@ -1,21 +1,17 @@
 import { redirect } from "next/navigation";
-import { createClient, createStore } from "@/lib/supabase/server";
+import { resolveSession } from "@/lib/session";
 import { orThrow } from "@/lib/store/types";
 import { SettingsForm } from "./settings-form";
 import { CategoryForm } from "./category-form";
 import { IncomeSources } from "./income-sources";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await resolveSession();
+  if (session.kind === "anonymous") {
     redirect("/");
   }
+  const { user, store } = session;
 
-  const store = await createStore();
   const [profileResult, incomeResult, categoryResult] = await Promise.all([
     store.profiles.get(user.id),
     store.incomeSources.list(),

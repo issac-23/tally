@@ -3,10 +3,10 @@
  *
  * lib/dev/fixtures.ts stubs out Supabase entirely — no auth, no RLS, seeded
  * data for anyone who asks. It is guarded by a literal
- * `process.env.NODE_ENV !== "production"` check at each of its three call
- * sites (createClient and createStore in lib/supabase/server.ts, and
- * updateSession in lib/supabase/middleware.ts), which Next.js folds at build
- * time so the module is never bundled. That guarantee
+ * `process.env.NODE_ENV !== "production"` check at each of its call sites
+ * (createClient, createStore and fixturesEnabled in lib/supabase/server.ts,
+ * and updateSession in lib/supabase/middleware.ts), which Next.js folds at
+ * build time so the module is never bundled. That guarantee
  * is the only thing standing between a dev convenience and an app that serves
  * fabricated data with no session, so it gets verified rather than trusted.
  *

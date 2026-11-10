@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Inbox, Plus } from "lucide-react";
-import { createClient, createStore } from "@/lib/supabase/server";
+import { resolveSession } from "@/lib/session";
 import { RunwayCard } from "@/components/dashboard/runway-card";
 import { SavingsProjectionSection } from "@/components/dashboard/savings-projection";
 import { SpendingBreakdown } from "@/components/dashboard/spending-breakdown";
@@ -11,16 +11,13 @@ import { formatCurrency } from "@/lib/utils/format";
 import { loadFinancialPicture } from "@/lib/finance/financial-picture";
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await resolveSession();
+  if (session.kind === "anonymous") {
     redirect("/");
   }
+  const { user, store } = session;
 
-  const result = await loadFinancialPicture(await createStore(), user.id);
+  const result = await loadFinancialPicture(store, user.id);
 
   if (result.status === "needs-onboarding") {
     redirect("/onboarding");

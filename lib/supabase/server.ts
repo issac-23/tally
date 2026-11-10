@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createSupabaseStore } from "@/lib/store/supabase-store";
 import type { Store } from "@/lib/store/types";
+import type { SessionUser } from "@/lib/session";
 
 export async function createClient() {
   const cookieStore = await cookies();
@@ -45,14 +46,31 @@ export async function createClient() {
 }
 
 /**
- * The store the app reads and writes through. Auth still comes from
- * `createClient`; this is the data side.
+ * Whether the dev fixtures stand in for Supabase. The same literal NODE_ENV
+ * comparison as the two guards below, so it is `false` in a production build.
+ * It only says whether to ask `createClient` for a session; the fixtures
+ * themselves are imported behind the guards in `createClient` and
+ * `createStore`.
+ */
+export function fixturesEnabled(): boolean {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.TALLY_DEV_FIXTURES === "1"
+  );
+}
+
+/**
+ * The store the app reads and writes through, over the Supabase client the
+ * session was read with. Auth still comes from `createClient`; this is the
+ * data side.
  *
  * The same literal NODE_ENV guard as in `createClient`, for the same reason:
  * in a production build the fixture branch is statically false and
  * lib/dev/fixtures.ts is dropped from the bundle.
  */
-export async function createStore(): Promise<Store> {
+export async function createStore(
+  client: Awaited<ReturnType<typeof createClient>>
+): Promise<Store> {
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.TALLY_DEV_FIXTURES === "1"
@@ -63,5 +81,22 @@ export async function createStore(): Promise<Store> {
     return createFixtureStore({ scenario });
   }
 
-  return createSupabaseStore(await createClient());
+  return createSupabaseStore(client);
+}
+
+/**
+ * The signed-in user and their store, or null when nobody is signed in.
+ * One client serves both, so a page doesn't build two. Pages go through
+ * `resolveSession` in lib/session.ts, which also knows about the demo.
+ */
+export async function getSignedIn(): Promise<{
+  user: SessionUser;
+  store: Store;
+} | null> {
+  const client = await createClient();
+  const {
+    data: { user },
+  } = await client.auth.getUser();
+  if (!user) return null;
+  return { user, store: await createStore(client) };
 }

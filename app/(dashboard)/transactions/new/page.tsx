@@ -1,21 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient, createStore } from "@/lib/supabase/server";
+import { resolveSession } from "@/lib/session";
 import { orThrow } from "@/lib/store/types";
 import { ExpenseForm } from "@/components/forms/expense-form";
 
 export default async function NewTransactionPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const session = await resolveSession();
+  if (session.kind === "anonymous") {
     redirect("/");
   }
+  const { store } = session;
 
   // Categories visible to this user (presets + their own), presets first.
-  const categories = orThrow(await (await createStore()).categories.listVisible());
+  const categories = orThrow(await store.categories.listVisible());
 
   return (
     <main className="px-6 py-10">

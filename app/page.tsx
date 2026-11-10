@@ -1,15 +1,13 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { resolveSession } from "@/lib/session";
 import { SignInButton } from "@/components/ui/sign-in-button";
 import { Logo } from "@/components/ui/logo";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
+  // Only a real session skips the landing page. A demo visitor who comes
+  // back here is leaving the demo, and should see the way in again.
+  const session = await resolveSession();
+  if (session.kind === "user") {
     redirect("/dashboard");
   }
 
