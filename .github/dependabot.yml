@@ -53,5 +53,12 @@ updates:
     directory: "/"
     schedule:
       interval: monthly
+    # codeql-action/init and /analyze have to run the same version, or the
+    # analyze step rejects the config init wrote. Bumped one at a time they
+    # always fail, so every codeql-action step moves together.
+    groups:
+      codeql:
+        patterns:
+          - "github/codeql-action*"
     commit-message:
       prefix: "ci"
