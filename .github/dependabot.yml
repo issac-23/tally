@@ -58,8 +58,16 @@ updates:
     # always fail, so every codeql-action step moves together.
     # the names are spelled out because the docs do not say whether a wildcard
     # crosses a slash, and there are only two steps.
+    # a group covers one update type, so security fixes need their own copy;
+    # the two steps pin each other either way.
     groups:
       codeql:
+        applies-to: version-updates
+        patterns:
+          - "github/codeql-action/init"
+          - "github/codeql-action/analyze"
+      codeql-security:
+        applies-to: security-updates
         patterns:
           - "github/codeql-action/init"
           - "github/codeql-action/analyze"
