@@ -2,30 +2,30 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
-// Work Sans handles body, buttons, data points, labels, microcopy.
+// DM Sans handles body, buttons, data points, labels, microcopy.
 // One font, multiple weights and sizes for the different roles.
-const workSans = localFont({
-  variable: "--font-work-sans",
+const dmSans = localFont({
+  variable: "--font-dm-sans",
   display: "swap",
   adjustFontFallback: "Arial",
   src: [
     {
-      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-400-normal.woff2",
+      path: "../node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-500-normal.woff2",
+      path: "../node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff2",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-600-normal.woff2",
+      path: "../node_modules/@fontsource/dm-sans/files/dm-sans-latin-600-normal.woff2",
       weight: "600",
       style: "normal",
     },
     {
-      path: "../node_modules/@fontsource/work-sans/files/work-sans-latin-700-normal.woff2",
+      path: "../node_modules/@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff2",
       weight: "700",
       style: "normal",
     },
@@ -75,7 +75,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${workSans.variable} ${playfair.variable} h-full`}
+      className={`${dmSans.variable} ${playfair.variable} h-full`}
     >
       <body className="min-h-full flex flex-col bg-[var(--color-background)] text-[var(--color-foreground)]">
         {children}
