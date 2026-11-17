@@ -7,8 +7,11 @@ name: codeql
 on:
   push:
     branches: [main]
+  # Deliberately unfiltered by base branch. With `branches: [main]` a PR
+  # stacked on another branch never schedules this job, and because main's
+  # ruleset requires it, that PR blocks on a check that never arrives --
+  # retargeting after the base merges does not re-run anything.
   pull_request:
-    branches: [main]
   schedule:
     # Weekly, so a newly published query finds old code rather than waiting
     # for the next push.
