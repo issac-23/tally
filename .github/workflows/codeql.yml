@@ -9,9 +9,14 @@ on:
     branches: [main]
   # Deliberately unfiltered by base branch. With `branches: [main]` a PR
   # stacked on another branch never schedules this job, and because main's
-  # ruleset requires it, that PR blocks on a check that never arrives --
-  # retargeting after the base merges does not re-run anything.
+  # ruleset requires it, that PR blocks on a check that never arrives.
+  #
+  # `edited` is on top of the three defaults because a stacked PR is
+  # analysed as a merge into its own base. Re-pointing it at main leaves a
+  # green check describing a merge that never existed, so the base change
+  # has to re-analyse. It costs a run per title or body edit too.
   pull_request:
+    types: [opened, synchronize, reopened, edited]
   schedule:
     # Weekly, so a newly published query finds old code rather than waiting
     # for the next push.
