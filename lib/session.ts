@@ -23,6 +23,7 @@ import { classifyVisitor } from "@/lib/demo/cookie";
 import { DEMO_USER_ID } from "@/lib/demo/data";
 import { createReadOnlyDemoStore } from "@/lib/demo/read-only-store";
 import { fixturesEnabled, getSignedIn } from "@/lib/supabase/server";
+import { TIME_ZONE_COOKIE, readTimeZone } from "@/lib/utils/time-zone";
 import type { Store } from "@/lib/store/types";
 
 /** What the pages read off a user: an id and something to call them. */
@@ -68,9 +69,22 @@ export async function resolveVisitor(deps: SessionDeps): Promise<Session> {
  */
 export const resolveSession = cache(async (): Promise<Session> => {
   const jar = await cookies();
+  const timeZone = readTimeZone(jar.get(TIME_ZONE_COOKIE)?.value);
   return resolveVisitor({
     ...classifyVisitor(jar.getAll(), fixturesEnabled()),
     signedIn: getSignedIn,
-    demoStore: () => createReadOnlyDemoStore(),
+    // The demo's rows are generated around "today", so it needs the zone
+    // too: built in UTC and read in New York, the newest of them would be
+    // tomorrow's and fall out of every window.
+    demoStore: () => createReadOnlyDemoStore(new Date(), timeZone),
   });
+});
+
+/**
+ * The zone to read this request's day keys in: what the browser reported
+ * (components/time-zone-sync.tsx), or UTC until it has.
+ */
+export const viewerTimeZone = cache(async (): Promise<string> => {
+  const jar = await cookies();
+  return readTimeZone(jar.get(TIME_ZONE_COOKIE)?.value);
 });

@@ -19,10 +19,13 @@ import { buildDemoData, DEMO_USER_ID } from "./data";
 const refused = async (): Promise<StoreResult<never>> =>
   storeFailed({ kind: "read-only" });
 
-export function createReadOnlyDemoStore(now: Date = new Date()): Store {
+export function createReadOnlyDemoStore(
+  now: Date = new Date(),
+  timeZone?: string
+): Store {
   const data = createMemoryStore({
     viewerId: DEMO_USER_ID,
-    data: buildDemoData(now),
+    data: buildDemoData(now, timeZone),
   });
 
   return {

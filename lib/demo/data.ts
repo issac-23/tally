@@ -17,7 +17,7 @@
  * real person's spending or an endorsement of a real business.
  */
 
-import { addDays, dayKey, today } from "@/lib/utils/calendar";
+import { addDays, dayKey, monthKey, today } from "@/lib/utils/calendar";
 import type {
   CategoryRow,
   IncomeSourceRow,
@@ -92,16 +92,22 @@ function mulberry32(seed: number): () => number {
 }
 
 /** The last day of the month `months` months after the one containing `now`. */
-function monthEnd(now: Date, months: number): string {
-  return dayKey(new Date(now.getFullYear(), now.getMonth() + months + 1, 0));
+function monthEnd(now: Date, months: number, timeZone?: string): string {
+  // The zone picks which month `now` is in; day 0 of the month after is the
+  // last day of the one wanted, worked out in one zone from there.
+  const [year, month] = monthKey(now, timeZone).split("-").map(Number);
+  return dayKey(new Date(year, month + months, 0));
 }
 
 /**
  * A fresh copy of the demo account as of `now`. Each call builds its own
  * rows, so nothing is shared between requests.
  */
-export function buildDemoData(now: Date = new Date()): MemoryData {
-  const todayKey = today(now);
+export function buildDemoData(
+  now: Date = new Date(),
+  timeZone?: string
+): MemoryData {
+  const todayKey = today(now, timeZone);
   const at = (daysBack: number) => addDays(todayKey, -daysBack);
 
   const categories: CategoryRow[] = [
@@ -202,7 +208,7 @@ export function buildDemoData(now: Date = new Date()): MemoryData {
       amount: 750,
       recurrence: "monthly",
       starts_on: null,
-      ends_on: monthEnd(now, 3),
+      ends_on: monthEnd(now, 3, timeZone),
       created_at: `${at(150)}T09:00:00.000Z`,
     },
   ];
