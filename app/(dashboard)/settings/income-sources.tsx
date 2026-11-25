@@ -8,7 +8,6 @@ import {
 } from "./actions";
 import {
   INCOME_RECURRENCE_OPTIONS,
-  monthlyIncome,
   sourceMonthlyAmount,
   type IncomeSource,
 } from "@/lib/utils/income";
@@ -20,14 +19,20 @@ import { useErrorShake } from "@/lib/hooks/use-error-shake";
 
 interface IncomeSourcesProps {
   sources: IncomeSource[];
+  /**
+   * Everything paying out this month, worked out by the page in the
+   * viewer's zone. Not recomputed here: this component renders on the
+   * server and again in the browser, and the two can disagree about the
+   * month.
+   */
+  monthlyTotal: number;
 }
 
 const FIELD_CLASS =
   "w-full rounded border border-[var(--color-border-strong)] bg-white px-3 py-2 text-sm text-[var(--color-foreground)] transition-all focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-subtle)]";
 
-export function IncomeSources({ sources }: IncomeSourcesProps) {
+export function IncomeSources({ sources, monthlyTotal }: IncomeSourcesProps) {
   const [adding, setAdding] = useState(false);
-  const total = monthlyIncome(sources);
 
   return (
     <div className="space-y-4">
@@ -43,7 +48,7 @@ export function IncomeSources({ sources }: IncomeSourcesProps) {
               Coming in this month
             </span>
             <span className="font-semibold tabular-nums text-[var(--color-foreground)]">
-              {formatCurrency(total)}/mo
+              {formatCurrency(monthlyTotal)}/mo
             </span>
           </p>
         </>

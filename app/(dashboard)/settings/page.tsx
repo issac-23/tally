@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { resolveSession } from "@/lib/session";
+import { resolveSession, viewerTimeZone } from "@/lib/session";
 import { orThrow } from "@/lib/store/types";
+import { monthlyIncome } from "@/lib/utils/income";
 import { SettingsForm } from "./settings-form";
 import { CategoryForm } from "./category-form";
 import { IncomeSources } from "./income-sources";
@@ -22,6 +23,15 @@ export default async function SettingsPage() {
 
   const savings = orThrow(profileResult)?.savings_balance ?? 0;
   const incomeSources = orThrow(incomeResult);
+  // Worked out here, in the viewer's zone, rather than in the client
+  // component: that one is rendered twice, on the server and again in the
+  // browser, and around a month change the two disagree about which month
+  // it is — so a source ending that month was in one total and not the other.
+  const incomeTotal = monthlyIncome(
+    incomeSources,
+    new Date(),
+    await viewerTimeZone()
+  );
   const customCategories = orThrow(categoryResult).map(({ id, name, color }) => ({
     id,
     name,
@@ -64,7 +74,7 @@ export default async function SettingsPage() {
                 Everything coming in, at whatever cadence it arrives.
               </p>
             </div>
-            <IncomeSources sources={incomeSources} />
+            <IncomeSources sources={incomeSources} monthlyTotal={incomeTotal} />
           </div>
 
           <div className="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6">
