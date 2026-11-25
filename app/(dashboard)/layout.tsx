@@ -1,5 +1,6 @@
 import { DemoBanner } from "@/components/dashboard/demo-banner";
 import { TopNav } from "@/components/dashboard/top-nav";
+import { TimeZoneSync } from "@/components/time-zone-sync";
 import { resolveSession } from "@/lib/session";
 
 export default async function DashboardLayout({
@@ -13,6 +14,9 @@ export default async function DashboardLayout({
 
   return (
     <>
+      {/* Every signed-in and demo page sits under here, so the zone is
+          reported once and is already there for the next request. */}
+      <TimeZoneSync />
       <TopNav demo={demo} />
       {demo && <DemoBanner />}
       {children}
