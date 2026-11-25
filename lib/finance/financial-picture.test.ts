@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createFixtureStore, resetFixtureStores } from "@/lib/dev/fixtures";
+import { createMemoryStore } from "@/lib/store/memory-store";
 import type { Store } from "@/lib/store/types";
 import { loadFinancialPicture, type FinancialPicture } from "./financial-picture";
 
@@ -99,5 +100,60 @@ describe("loadFinancialPicture", () => {
     const picture = await ready("contractending");
     expect(picture.incomeSchedule[0]).toBe(4400);
     expect(picture.incomeSchedule[12]).toBe(1800);
+  });
+});
+
+describe("loadFinancialPicture in the viewer's zone", () => {
+  // The whole chain, not just spendingSummary: a zone dropped anywhere
+  // between here and the window maths leaves Today empty again.
+  const lateEvening = new Date("2026-03-10T02:00:00Z");
+
+  function storeWithEveningExpense(): Store {
+    return createMemoryStore({
+      viewerId: USER_ID,
+      data: {
+        profile: { id: USER_ID, savings_balance: 1000, onboarded: true },
+        categories: [],
+        // Logged at 9pm on the 9th in New York, which is already the 10th
+        // in UTC.
+        transactions: [
+          {
+            id: "t1",
+            user_id: USER_ID,
+            amount: 42,
+            description: "Dinner",
+            merchant: null,
+            category_id: null,
+            date: "2026-03-09",
+            recurrence: "once",
+            created_at: "2026-03-10T02:00:00.000Z",
+          },
+        ],
+        incomeSources: [],
+      },
+    });
+  }
+
+  it("counts their evening's expense as today", async () => {
+    const result = await loadFinancialPicture(
+      storeWithEveningExpense(),
+      USER_ID,
+      lateEvening,
+      "America/New_York"
+    );
+    if (result.status !== "ready") throw new Error(result.status);
+    expect(result.picture.spending.today).toBe(42);
+  });
+
+  it("does not, read in UTC — which is the bug", async () => {
+    const result = await loadFinancialPicture(
+      storeWithEveningExpense(),
+      USER_ID,
+      lateEvening,
+      "UTC"
+    );
+    if (result.status !== "ready") throw new Error(result.status);
+    expect(result.picture.spending.today).toBe(0);
+    expect(result.picture.spending.this_week).toBe(42);
   });
 });

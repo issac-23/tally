@@ -12,6 +12,10 @@
  *  - One "now". It is read once per load and every window below is cut from
  *    it, so the read bound, the in-memory filters and the utilities can't
  *    disagree about when "the last 30 days" starts.
+ *  - One zone. Which day that "now" falls on depends on where the viewer is,
+ *    and the dashboard passes the zone the browser reported. Without it the
+ *    windows are the server's: on Vercel that is UTC, which turns a US
+ *    evening's expenses into tomorrow's and shows Today as nothing.
  *  - Failed reads. A read that fails used to resolve with `{ error }` and be
  *    treated as "no rows", which turned a failed income read into income of 0
  *    and a false runway. Any failed read is `unavailable`, and a failed
@@ -85,7 +89,8 @@ export type FinancialPictureResult =
 export async function loadFinancialPicture(
   store: Store,
   userId: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): Promise<FinancialPictureResult> {
   const profile = await store.profiles.get(userId);
   if (!profile.ok) {
@@ -107,7 +112,7 @@ export async function loadFinancialPicture(
     // logged eight months ago is still owed.
     store.transactions.listRecurring(),
     // One read covers every window: the 30-day figures are a subset of it.
-    store.transactions.listSince(daysAgo(now, COMPARISON_WINDOW_DAYS)),
+    store.transactions.listSince(daysAgo(now, COMPARISON_WINDOW_DAYS, timeZone)),
     store.transactions.listRecent(RECENT_COUNT),
   ]);
 
@@ -122,12 +127,17 @@ export async function loadFinancialPicture(
   const recurringRows = recurring.value;
   const windowRows = window.value;
 
-  const spendingStart = daysAgo(now, SPENDING_WINDOW_DAYS);
+  const spendingStart = daysAgo(now, SPENDING_WINDOW_DAYS, timeZone);
   const last30 = windowRows.filter((t) => t.date >= spendingStart);
 
-  const monthly = monthlyIncome(incomeSources, now);
-  const incomeSchedule = incomeByMonth(incomeSources, PROJECTION_MONTHS, now);
-  const burnRate = monthlyBurnRate(last30, recurringRows, now);
+  const monthly = monthlyIncome(incomeSources, now, timeZone);
+  const incomeSchedule = incomeByMonth(
+    incomeSources,
+    PROJECTION_MONTHS,
+    now,
+    timeZone
+  );
+  const burnRate = monthlyBurnRate(last30, recurringRows, now, timeZone);
   const projection = projectSavings(savings, incomeSchedule, burnRate);
 
   return {
@@ -140,11 +150,11 @@ export async function loadFinancialPicture(
       hasSpendingData: last30.length > 0 || recurringRows.length > 0,
       runway: calculateRunway(savings, monthly, burnRate),
       projectionScale: projectionScale(projection.depletionMonth),
-      spending: spendingSummary(last30, now),
+      spending: spendingSummary(last30, now, timeZone),
       commitments: commitmentBreakdown(recurringRows, monthly),
       categorySlices: groupByCategory(last30),
       merchantSlices: groupByMerchant(last30),
-      periodComparison: comparePeriods(windowRows, now),
+      periodComparison: comparePeriods(windowRows, now, timeZone),
       recent: recent.value,
     },
   };
