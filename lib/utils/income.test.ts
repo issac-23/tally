@@ -5,6 +5,7 @@ import {
   monthlyIncome,
   sourceMonthlyAmount,
   validateIncomeInput,
+  type IncomeSource,
 } from "./income";
 
 function source(overrides: Record<string, unknown> = {}) {
@@ -184,5 +185,30 @@ describe("validateIncomeInput", () => {
       ok: false,
       error: expect.stringMatching(/or less/),
     });
+  });
+});
+
+describe("income in the viewer's zone", () => {
+  // 02:00 UTC on 1 January is still 9pm on 31 December in New York, so the
+  // server and the viewer disagree about which month it is.
+  const newYear = new Date("2026-01-01T02:00:00Z");
+  const retainer: IncomeSource = {
+    id: "r",
+    name: "Retainer",
+    amount: 1000,
+    recurrence: "monthly",
+    ends_on: "2025-12-31",
+  };
+
+  it("reads the month the viewer is in", () => {
+    expect(monthlyIncome([retainer], newYear, "America/New_York")).toBe(1000);
+    expect(monthlyIncome([retainer], newYear, "UTC")).toBe(0);
+  });
+
+  it("starts the schedule from the viewer's month and then counts calendar months", () => {
+    const schedule = incomeByMonth([retainer], 2, newYear, "America/New_York");
+    // December, then the two months after it, which the contract has ended for.
+    expect(schedule).toEqual([1000, 0, 0]);
+    expect(incomeByMonth([retainer], 2, newYear, "UTC")).toEqual([0, 0, 0]);
   });
 });

@@ -49,8 +49,12 @@ export interface IncomeSource {
  * still pays that month, and treating it as already over would understate
  * the runway.
  */
-export function isActiveIn(source: IncomeSource, date: Date): boolean {
-  const month = monthKey(date);
+export function isActiveIn(
+  source: IncomeSource,
+  date: Date,
+  timeZone?: string
+): boolean {
+  const month = monthKey(date, timeZone);
   if (source.starts_on && monthKeyOf(source.starts_on) > month) return false;
   if (source.ends_on && monthKeyOf(source.ends_on) < month) return false;
   return true;
@@ -65,14 +69,19 @@ export function isActiveIn(source: IncomeSource, date: Date): boolean {
 export function incomeByMonth(
   sources: IncomeSource[],
   months: number,
-  from: Date = new Date()
+  from: Date = new Date(),
+  timeZone?: string
 ): number[] {
+  // The zone is used once, to find which month `from` is in — just after
+  // midnight on the 1st, the server and the viewer can be in different ones.
+  // The months after it are counted off that, and each one is built and read
+  // back in the same zone, so handing the zone on would shift them twice.
+  const [year, month] = monthKey(from, timeZone).split("-").map(Number);
   const schedule: number[] = [];
   for (let m = 0; m <= months; m++) {
     // Day 1 avoids the month-end rollover: adding a month to 31 March gives
     // 31 April, which is 1 May.
-    const month = new Date(from.getFullYear(), from.getMonth() + m, 1);
-    schedule.push(monthlyIncome(sources, month));
+    schedule.push(monthlyIncome(sources, new Date(year, month - 1 + m, 1)));
   }
   return schedule;
 }
@@ -90,10 +99,11 @@ export function sourceMonthlyAmount(source: IncomeSource): number {
 /** Everything paying out in the month containing `on`, combined. */
 export function monthlyIncome(
   sources: IncomeSource[],
-  on: Date = new Date()
+  on: Date = new Date(),
+  timeZone?: string
 ): number {
   return sources
-    .filter((s) => isActiveIn(s, on))
+    .filter((s) => isActiveIn(s, on, timeZone))
     .reduce((sum, s) => sum + sourceMonthlyAmount(s), 0);
 }
 
