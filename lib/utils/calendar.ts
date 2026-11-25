@@ -14,8 +14,20 @@
  * and not through milliseconds, so a daylight-saving change can't push a
  * cutoff a day either way.
  *
- * On the server, "local" is the server's zone. The only place that matters is
- * validating a date the user typed: see `latestDayOnEarth`.
+ * Turning an instant into a day is the one step that depends on where the
+ * person is: 9pm in New York is already tomorrow in UTC, so a server in UTC
+ * would call a US evening's expenses tomorrow's and show Today as nothing.
+ * The functions that do that step — `dayKey`, `today`, `monthKey` and
+ * `daysAgo` — take an optional IANA zone, and the dashboard passes the one
+ * the browser reported (lib/utils/time-zone.ts). Without one they read the
+ * machine's own zone, which is what the browser-side callers want.
+ *
+ * `parseDayKey` and `addDays` deliberately don't take a zone. They are
+ * calendar arithmetic over a key, done entirely in one zone and coming back
+ * out as a key; handing them a second zone would shift the answer twice.
+ *
+ * `latestDayOnEarth` is its own case: it is about every zone at once, not
+ * about the viewer's.
  */
 
 /**
@@ -29,14 +41,51 @@ function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** The local calendar day of `date`, as YYYY-MM-DD. */
-export function dayKey(date: Date): string {
+/**
+ * The year, month and day `date` falls on in `timeZone`.
+ *
+ * Read out of `formatToParts` rather than off a formatted string: en-CA
+ * renders a date as `2026-03-09` on Node 24, but a locale's pattern is
+ * ICU's to change and the parts are named whatever it does.
+ *
+ * An unrecognised zone makes `Intl.DateTimeFormat` throw a RangeError. The
+ * zone arrives from a cookie the browser wrote, so it can be anything at
+ * all, and a throw here would be a 500 on the dashboard. Anything Intl
+ * won't take falls back to UTC, which is what a server with no zone to go
+ * on was already doing.
+ */
+function zonedParts(date: Date, timeZone: string): [number, number, number] {
+  let parts;
+  try {
+    parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+  } catch {
+    return [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
+  }
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  return [value("year"), value("month"), value("day")];
+}
+
+/**
+ * The calendar day of `date`, as YYYY-MM-DD, in `timeZone` — or in the
+ * machine's own zone when none is given.
+ */
+export function dayKey(date: Date, timeZone?: string): string {
+  if (timeZone !== undefined) {
+    const [year, month, day] = zonedParts(date, timeZone);
+    return `${year}-${pad(month)}-${pad(day)}`;
+  }
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /** Today's day key. */
-export function today(now: Date = new Date()): string {
-  return dayKey(now);
+export function today(now: Date = new Date(), timeZone?: string): string {
+  return dayKey(now, timeZone);
 }
 
 /** A day key as the local midnight that starts it. */
@@ -55,8 +104,8 @@ export function addDays(key: string, days: number): string {
  * The first day of a trailing window: the window of the last 30 days starts
  * at `daysAgo(now, 30)`, and a date is inside it when its key is >= that.
  */
-export function daysAgo(now: Date, days: number): string {
-  return addDays(today(now), -days);
+export function daysAgo(now: Date, days: number, timeZone?: string): string {
+  return addDays(today(now, timeZone), -days);
 }
 
 /** A day key written out for a person, e.g. "May 15". */
@@ -67,8 +116,12 @@ export function formatDayKey(
   return parseDayKey(key).toLocaleDateString("en-US", options);
 }
 
-/** YYYY-MM for the month containing `date`. */
-export function monthKey(date: Date): string {
+/** YYYY-MM for the month containing `date`, in `timeZone` if one is given. */
+export function monthKey(date: Date, timeZone?: string): string {
+  if (timeZone !== undefined) {
+    const [year, month] = zonedParts(date, timeZone);
+    return `${year}-${pad(month)}`;
+  }
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
 }
 

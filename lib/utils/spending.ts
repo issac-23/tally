@@ -1,6 +1,10 @@
 /**
  * Spending aggregations from a list of transactions.
  * All amounts are positive numbers (expenses).
+ *
+ * Every window is cut from the day `now` falls on. `timeZone` says whose day
+ * that is: pass the viewer's, or the windows are the server's and a US
+ * evening lands on tomorrow. See lib/utils/calendar.ts.
  */
 
 import { daysAgo } from "@/lib/utils/calendar";
@@ -27,9 +31,10 @@ function isOnOrAfter(dateStr: string, start: string): boolean {
  */
 export function monthlyAverageSpend(
   transactions: AmountDated[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): number {
-  const cutoff = daysAgo(now, 30);
+  const cutoff = daysAgo(now, 30, timeZone);
   return transactions
     .filter((t) => isOnOrAfter(t.date, cutoff))
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -54,9 +59,10 @@ export function monthlyAverageSpend(
 export function monthlyBurnRate(
   recentTransactions: Array<AmountDated & { recurrence?: string | null }>,
   recurringTransactions: Parameters<typeof recurringMonthlyTotal>[0],
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): number {
-  const cutoff = daysAgo(now, 30);
+  const cutoff = daysAgo(now, 30, timeZone);
 
   const oneOff = recentTransactions
     .filter((t) => recurrenceOption(t.recurrence).perMonth === 0)
@@ -71,15 +77,16 @@ export function monthlyBurnRate(
  */
 export function spendingSummary(
   transactions: AmountDated[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): {
   today: number;
   this_week: number;
   this_month: number;
 } {
-  const todayStart = daysAgo(now, 0);
-  const weekStart = daysAgo(now, 7);
-  const monthStart = daysAgo(now, 30);
+  const todayStart = daysAgo(now, 0, timeZone);
+  const weekStart = daysAgo(now, 7, timeZone);
+  const monthStart = daysAgo(now, 30, timeZone);
 
   let today = 0;
   let thisWeek = 0;

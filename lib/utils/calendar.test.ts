@@ -31,6 +31,68 @@ describe("day keys", () => {
   });
 });
 
+/*
+ * How a zone-aware day key could go wrong, written down before the code:
+ *
+ *  1. An unrecognised zone reaching Intl.DateTimeFormat, which throws a
+ *     RangeError and takes the page down with it.
+ *  2. No zone given behaving as UTC on the CI box and as the developer's own
+ *     zone on their laptop, so a test passes in one place and not the other.
+ *     Every assertion below either names a zone or names none deliberately.
+ *  3. A zone handed to a Date built from calendar parts, which is already in
+ *     one zone — the key then shifts twice and names the wrong day.
+ *  4. Relying on the shape of an en-CA date string rather than reading the
+ *     year, month and day parts out of it.
+ *  5. An hours-based window landing an hour off midnight across a clock
+ *     change: covered by the existing calendar-arithmetic tests.
+ */
+describe("day keys in a given zone", () => {
+  // 02:00 UTC on 10 March is still the evening of 9 March in New York.
+  const lateEvening = new Date("2026-03-10T02:00:00Z");
+
+  it("reads the day as that zone has it", () => {
+    expect(dayKey(lateEvening, "America/New_York")).toBe("2026-03-09");
+    expect(dayKey(lateEvening, "UTC")).toBe("2026-03-10");
+    // Ahead of UTC rather than behind: already the 10th in Tokyo.
+    expect(dayKey(lateEvening, "Asia/Tokyo")).toBe("2026-03-10");
+    expect(today(lateEvening, "America/New_York")).toBe("2026-03-09");
+    expect(today(lateEvening, "UTC")).toBe("2026-03-10");
+  });
+
+  it("cuts a trailing window from that zone's today", () => {
+    expect(daysAgo(lateEvening, 0, "America/New_York")).toBe("2026-03-09");
+    expect(daysAgo(lateEvening, 7, "America/New_York")).toBe("2026-03-02");
+    expect(daysAgo(lateEvening, 0, "UTC")).toBe("2026-03-10");
+  });
+
+  it("keys the month that zone is in", () => {
+    const newYear = new Date("2026-01-01T02:00:00Z");
+    expect(monthKey(newYear, "America/New_York")).toBe("2025-12");
+    expect(monthKey(newYear, "UTC")).toBe("2026-01");
+  });
+
+  it("falls back rather than throwing on a zone it doesn't recognise", () => {
+    // An attacker, or a stale cookie, can put anything in. Intl throws a
+    // RangeError on nonsense, which would be a 500 on the dashboard.
+    for (const bad of ["Not/AZone", "", "Europe/London; DROP", "x".repeat(500)]) {
+      expect(dayKey(lateEvening, bad)).toBe(dayKey(lateEvening, "UTC"));
+      expect(today(lateEvening, bad)).toBe(today(lateEvening, "UTC"));
+      expect(monthKey(lateEvening, bad)).toBe(monthKey(lateEvening, "UTC"));
+      expect(daysAgo(lateEvening, 7, bad)).toBe(daysAgo(lateEvening, 7, "UTC"));
+    }
+  });
+
+  it("leaves the no-zone behaviour alone", () => {
+    // Still the machine's own zone, which is what every existing caller and
+    // every browser-side caller relies on. Compared against the same local
+    // getters rather than a fixed string, so it holds wherever this runs.
+    const d = new Date(2026, 4, 15, 23, 30);
+    expect(dayKey(d)).toBe("2026-05-15");
+    expect(dayKey(d, undefined)).toBe("2026-05-15");
+    expect(monthKey(d, undefined)).toBe("2026-05");
+  });
+});
+
 describe("windows", () => {
   it("counts back through month and year ends", () => {
     expect(addDays("2026-03-01", -1)).toBe("2026-02-28");

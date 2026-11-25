@@ -181,3 +181,54 @@ describe("spendingSummary", () => {
     });
   });
 });
+
+describe("spendingSummary in the viewer's zone", () => {
+  // 02:00 UTC on 10 March is still 9pm on the 9th in New York. A US user
+  // logging an expense that evening stores it under 2026-03-09; a server in
+  // UTC calls today the 10th and shows them nothing.
+  const lateEvening = new Date("2026-03-10T02:00:00Z");
+  const theirEvening = [{ amount: 42, date: "2026-03-09" }];
+
+  it("counts their evening as today", () => {
+    expect(spendingSummary(theirEvening, lateEvening, "America/New_York")).toEqual({
+      today: 42,
+      this_week: 42,
+      this_month: 42,
+    });
+  });
+
+  it("does not, read in UTC", () => {
+    // The bug, pinned: the row is yesterday's as far as the server is
+    // concerned, so Today is nothing while the week and month still see it.
+    expect(spendingSummary(theirEvening, lateEvening, "UTC")).toEqual({
+      today: 0,
+      this_week: 42,
+      this_month: 42,
+    });
+  });
+
+  it("carries the zone into the burn rate and the 30-day average", () => {
+    // The window's far edge moves with today too: 30 days back from the
+    // 9th is 7 February, from the 10th it is the 8th, so this one is inside
+    // the window in New York and has just dropped out of it in UTC.
+    const edge = [{ amount: 10, date: "2026-02-07" }];
+    expect(monthlyAverageSpend(edge, lateEvening, "America/New_York")).toBe(10);
+    expect(monthlyAverageSpend(edge, lateEvening, "UTC")).toBe(0);
+    expect(
+      monthlyBurnRate(
+        edge.map((t) => ({ ...t, recurrence: "once" })),
+        [],
+        lateEvening,
+        "America/New_York"
+      )
+    ).toBe(10);
+    expect(
+      monthlyBurnRate(
+        edge.map((t) => ({ ...t, recurrence: "once" })),
+        [],
+        lateEvening,
+        "UTC"
+      )
+    ).toBe(0);
+  });
+});

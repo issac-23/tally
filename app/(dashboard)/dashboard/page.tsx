@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Inbox, Plus } from "lucide-react";
-import { resolveSession } from "@/lib/session";
+import { resolveSession, viewerTimeZone } from "@/lib/session";
 import { RunwayCard } from "@/components/dashboard/runway-card";
 import { SavingsProjectionSection } from "@/components/dashboard/savings-projection";
 import { SpendingBreakdown } from "@/components/dashboard/spending-breakdown";
@@ -17,7 +17,15 @@ export default async function DashboardPage() {
   }
   const { user, store } = session;
 
-  const result = await loadFinancialPicture(store, user.id);
+  // The windows below are cut from the day the viewer is on, not the day
+  // the server is on. On Vercel those differ for most of the Americas after
+  // about 7pm, which used to empty the Today tile.
+  const result = await loadFinancialPicture(
+    store,
+    user.id,
+    new Date(),
+    await viewerTimeZone()
+  );
 
   if (result.status === "needs-onboarding") {
     redirect("/onboarding");
