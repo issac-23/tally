@@ -166,13 +166,16 @@ export interface PeriodComparison {
  * Compare the most recent 30-day window against the prior 30-day window.
  *
  * "Now" defaults to new Date() but can be passed in for deterministic tests.
+ * `timeZone` decides whose day "now" falls on; without one it is the
+ * machine's.
  */
 export function comparePeriods(
   transactions: TxLike[],
-  now: Date = new Date()
+  now: Date = new Date(),
+  timeZone?: string
 ): PeriodComparison {
-  const currentStart = daysAgo(now, 30);
-  const priorStart = daysAgo(now, 60);
+  const currentStart = daysAgo(now, 30, timeZone);
+  const priorStart = daysAgo(now, 60, timeZone);
 
   let current = 0;
   let prior = 0;
