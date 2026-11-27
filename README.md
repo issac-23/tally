@@ -5,8 +5,10 @@ at your current spending rate. Sign in with Google, log expenses, and
 see your runway projected forward 12 months with a dotted line marking
 when you'd hit zero.
 
-**Live demo:** https://tally-issac.vercel.app (click "Try the demo" to look
-around a sample account without signing in)
+**[Open the live demo](https://tally-issac.vercel.app/demo)**, one click, no
+sign-in: it drops you straight into a read-only sample account. (The
+[landing page](https://tally-issac.vercel.app) has the same "Try the demo"
+button.)
 
 ![tally screenshot](./tally-screenshot.png)
 
@@ -51,6 +53,8 @@ app-layer filtering.
 - Add and delete expenses (amount, category, merchant, date, notes)
 - Spending breakdowns by category and by merchant, each as a donut
   with a list of progress bars
+- Recurring expenses count as a monthly commitment; stop one when you cancel
+  it and it leaves your runway while its history stays
 - Settings page to update savings and salary at any time
 - Responsive layout for mobile and desktop
 
