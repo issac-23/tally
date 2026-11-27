@@ -151,7 +151,7 @@ export async function loadFinancialPicture(
       runway: calculateRunway(savings, monthly, burnRate),
       projectionScale: projectionScale(projection.depletionMonth),
       spending: spendingSummary(last30, now, timeZone),
-      commitments: commitmentBreakdown(recurringRows, monthly),
+      commitments: commitmentBreakdown(recurringRows, monthly, daysAgo(now, 0, timeZone)),
       categorySlices: groupByCategory(last30),
       merchantSlices: groupByMerchant(last30),
       periodComparison: comparePeriods(windowRows, now, timeZone),

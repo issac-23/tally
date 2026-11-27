@@ -51,6 +51,13 @@ function everyWrite(store: Store) {
     "transactions.add": () => store.transactions.add(u, fields),
     "transactions.update": () => store.transactions.update(u, "demo-tx-1", fields),
     "transactions.remove": () => store.transactions.remove(u, "demo-tx-1"),
+    "transactions.setEndsOn": () => store.transactions.setEndsOn(u, "demo-tx-1", "2026-01-01"),
+    "transactions.retag": () =>
+      store.transactions.retag(u, ["demo-tx-1"], {
+        category_id: "demo-cat-books",
+        merchant: null,
+        recurrence: "monthly",
+      }),
   };
 }
 

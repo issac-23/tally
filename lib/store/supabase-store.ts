@@ -52,7 +52,7 @@ function failure(error: DbError): StoreResult<never> {
 }
 
 const CATEGORY_JOIN = "category:categories(id, name, icon, color)";
-const TRANSACTION_COLUMNS = `id, amount, description, merchant, date, recurrence, category_id, ${CATEGORY_JOIN}`;
+const TRANSACTION_COLUMNS = `id, amount, description, merchant, date, recurrence, ends_on, category_id, ${CATEGORY_JOIN}`;
 const CATEGORY_COLUMNS = "id, user_id, name, icon, color, is_preset";
 const INCOME_COLUMNS = "id, name, amount, recurrence, starts_on, ends_on";
 
@@ -285,12 +285,39 @@ export function createSupabaseStore(client: SupabaseClient): Store {
         // Without .select() a wrong id would report success against zero rows.
         const { data, error } = await client
           .from("transactions")
-          .update(fields)
+          // A one-off has nothing to end (transactions_ends_on_check).
+          .update(fields.recurrence === "once" ? { ...fields, ends_on: null } : fields)
           .eq("id", id)
           .eq("user_id", userId)
           .select("id");
         if (error) return failure(error);
         return stored(Array.isArray(data) && data.length > 0);
+      },
+      async setEndsOn(userId, id, day) {
+        const { data, error } = await client
+          .from("transactions")
+          .update({ ends_on: day })
+          .eq("id", id)
+          .eq("user_id", userId)
+          .neq("recurrence", "once")
+          .select("id");
+        if (error) return failure(error);
+        return stored(Array.isArray(data) && data.length > 0);
+      },
+      retag(userId, ids, fields) {
+        if (ids.length === 0) return Promise.resolve(stored(undefined));
+        return done(
+          client
+            .from("transactions")
+            .update({
+              category_id: fields.category_id,
+              merchant: fields.merchant,
+              recurrence: fields.recurrence,
+              ...(fields.recurrence === "once" ? { ends_on: null } : {}),
+            })
+            .in("id", ids)
+            .eq("user_id", userId)
+        );
       },
       remove(userId, id) {
         return done(
@@ -346,6 +373,7 @@ function toTransaction(row: Row): TransactionRecord {
     merchant: text(row.merchant),
     date: String(row.date),
     recurrence: text(row.recurrence) ?? "once",
+    ends_on: text(row.ends_on),
     category_id: text(row.category_id),
     category: toCategoryRef(row.category),
   };

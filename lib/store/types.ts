@@ -44,6 +44,8 @@ export interface TransactionRecord {
   merchant: string | null;
   date: string; // YYYY-MM-DD
   recurrence: string;
+  /** Set on a series' newest row once the commitment has been stopped. */
+  ends_on: string | null;
   category_id: string | null;
   category: CategoryRef | null;
 }
@@ -125,6 +127,24 @@ export interface Store {
     ): Promise<StoreResult<boolean>>;
     /** Removing an expense that isn't there is not an error. */
     remove(userId: string, id: string): Promise<StoreResult<void>>;
+    /**
+     * Stop (a day) or resume (null) a recurring expense. False when no
+     * recurring expense of the user's has that id.
+     */
+    setEndsOn(
+      userId: string,
+      id: string,
+      day: string | null
+    ): Promise<StoreResult<boolean>>;
+    /**
+     * Give every listed expense of the user's the same category, merchant and
+     * recurrence, so a series stays one series after its newest row is edited.
+     */
+    retag(
+      userId: string,
+      ids: string[],
+      fields: Pick<TransactionFields, "category_id" | "merchant" | "recurrence">
+    ): Promise<StoreResult<void>>;
   };
 }
 

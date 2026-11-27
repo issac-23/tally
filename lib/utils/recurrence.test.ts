@@ -75,6 +75,26 @@ describe("recurringSeries", () => {
     category_id: "housing",
   });
 
+  it("drops a series once its newest row has ended, however old rows read", () => {
+    const rows = [
+      { ...rent("2026-08-01", 1850), ends_on: "2026-09-10" },
+      rent("2026-07-01", 1850), // no end date, but not the newest
+    ];
+    expect(recurringSeries(rows, "2026-09-09")).toHaveLength(1);
+    expect(recurringSeries(rows, "2026-09-10")).toEqual([]);
+    expect(recurringSeries(rows, "2026-12-01")).toEqual([]);
+    // Without a day to judge by, nothing is treated as ended.
+    expect(recurringSeries(rows)).toHaveLength(1);
+  });
+
+  it("starts counting again when the expense is logged after it ended", () => {
+    const rows = [
+      rent("2026-11-01", 1900),
+      { ...rent("2026-08-01", 1850), ends_on: "2026-09-10" },
+    ];
+    expect(recurringSeries(rows, "2026-12-01")).toHaveLength(1);
+  });
+
   it("ignores one-off transactions entirely", () => {
     expect(
       recurringSeries([
