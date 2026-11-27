@@ -68,6 +68,8 @@ export interface TransactionRow {
   category_id: string | null;
   date: string;
   recurrence: string;
+  /** Absent reads as null, so seeds written before 009 still load. */
+  ends_on?: string | null;
   created_at: string;
 }
 
@@ -203,6 +205,7 @@ export function createMemoryStore(options: MemoryOptions): Store {
       merchant: t.merchant,
       date: t.date,
       recurrence: t.recurrence,
+      ends_on: t.ends_on ?? null,
       category_id: t.category_id,
       category:
         category && visibleCategory(category)
@@ -471,7 +474,35 @@ export function createMemoryStore(options: MemoryOptions): Store {
           const bad = transactionViolation(fields);
           if (bad) return bad;
           Object.assign(row, fields, { amount: cents(fields.amount) });
+          if (fields.recurrence === "once") row.ends_on = null;
           return stored(true);
+        }),
+
+      setEndsOn: (userId, id, day) =>
+        write(userId, () => {
+          const row = data.transactions.find(
+            (t) => t.id === id && t.user_id === userId && t.recurrence !== "once"
+          );
+          if (!row) return stored(false);
+          // transactions_ends_on_check.
+          if (day !== null && day < row.date) return violates("transactions_ends_on_check");
+          row.ends_on = day;
+          return stored(true);
+        }),
+
+      retag: (userId, ids, fields) =>
+        write(userId, () => {
+          if (!categoryUsable(userId, fields.category_id)) {
+            return storeFailed({ kind: "category-unavailable" });
+          }
+          const wanted = new Set(ids);
+          const rows = data.transactions.filter((t) => wanted.has(t.id) && t.user_id === userId);
+          for (const t of rows) {
+            Object.assign(t, fields);
+            // A one-off has nothing to end (transactions_ends_on_check).
+            if (fields.recurrence === "once") t.ends_on = null;
+          }
+          return stored(undefined);
         }),
 
       remove: (userId, id) =>

@@ -118,4 +118,63 @@ describe("the Supabase store", () => {
       'eq("is_preset", false)',
     ]);
   });
+
+  describe("paging", () => {
+    /** A server holding `total` rows that never returns more than `cap` per request. */
+    function capped(total: number, cap: number) {
+      const requests: Array<[number, number]> = [];
+      const chain: Record<string, unknown> = {};
+      for (const name of ["select", "order", "gte", "neq"]) chain[name] = () => chain;
+      chain.range = (from: number, to: number) => {
+        requests.push([from, to]);
+        const n = Math.max(0, Math.min(to - from + 1, cap, total - from));
+        const data = Array.from({ length: n }, (_, i) => ({
+          id: `t${from + i}`,
+          amount: 1,
+          date: "2026-05-15",
+          recurrence: "once",
+        }));
+        return Promise.resolve({ data, error: null });
+      };
+      const client = { from: () => chain } as unknown as SupabaseClient;
+      return { client, requests };
+    }
+
+    it("reads past a 1000-row server cap", async () => {
+      const { client, requests } = capped(2500, 1000);
+      const result = await createSupabaseStore(client).transactions.listAll();
+      if (!result.ok) throw new Error("expected rows");
+      expect(result.value).toHaveLength(2500);
+      expect(new Set(result.value.map((t) => t.id)).size).toBe(2500);
+      expect(requests).toEqual([
+        [0, 999],
+        [1000, 1999],
+        [2000, 2999],
+      ]);
+    });
+
+    it("makes one request when everything fits in a page", async () => {
+      const { client, requests } = capped(3, 1000);
+      const result = await createSupabaseStore(client).transactions.listRecurring();
+      expect(result.ok && result.value).toHaveLength(3);
+      expect(requests).toHaveLength(1);
+    });
+
+    it("returns the error if a later page fails", async () => {
+      let call = 0;
+      const chain: Record<string, unknown> = {};
+      for (const name of ["select", "order", "gte", "neq"]) chain[name] = () => chain;
+      chain.range = () => {
+        call++;
+        return Promise.resolve(
+          call === 1
+            ? { data: Array.from({ length: 1000 }, (_, i) => ({ id: `t${i}` })), error: null }
+            : { data: null, error: { code: "PGRST301", message: "JWT expired" } }
+        );
+      };
+      const client = { from: () => chain } as unknown as SupabaseClient;
+      const result = await createSupabaseStore(client).transactions.listSince("2026-01-01");
+      expect(result.ok).toBe(false);
+    });
+  });
 });

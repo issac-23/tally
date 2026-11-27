@@ -14,6 +14,7 @@ import {
   monthlyEquivalent,
   recurrenceBadge,
   recurringSeries,
+  seriesKey,
   type Recurrence,
 } from "./recurrence";
 
@@ -25,6 +26,7 @@ interface RecurringRow {
   recurrence?: string | null;
   category_id?: string | null;
   category?: { id: string; name: string; icon: string; color: string } | null;
+  ends_on?: string | null;
 }
 
 export interface Commitment {
@@ -59,19 +61,16 @@ export interface CommitmentSummary {
 
 export function commitmentBreakdown(
   rows: RecurringRow[],
-  monthlySalary: number
+  monthlySalary: number,
+  asOf?: string
 ): CommitmentSummary {
   // recurringSeries collapses twelve months of logged rent into the one
   // commitment it actually represents, newest row winning.
-  const commitments = recurringSeries(rows)
+  const commitments = recurringSeries(rows, asOf)
     .map((row) => {
       const recurrence = (row.recurrence ?? "once") as Recurrence;
       return {
-        key: [
-          recurrence,
-          row.category?.id ?? row.category_id ?? "",
-          (row.merchant ?? "").trim().toLowerCase(),
-        ].join("|"),
+        key: seriesKey(row),
         label: labelFor(row),
         amount: Number(row.amount),
         recurrence,

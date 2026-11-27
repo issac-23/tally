@@ -3,6 +3,8 @@
 import { redirect } from "next/navigation";
 import { runWrite } from "@/lib/entities/run-write";
 import * as transactions from "@/lib/entities/transaction";
+import { viewerTimeZone } from "@/lib/session";
+import { dayKey } from "@/lib/utils/calendar";
 import type { TransactionInput } from "@/lib/utils/transaction-input";
 
 export interface DeleteTransactionResult {
@@ -35,4 +37,20 @@ export async function updateTransaction(
     return { error: result.error };
   }
   redirect("/transactions");
+}
+
+export async function stopRecurring(id: string): Promise<{ error?: string }> {
+  // The viewer's day, so "stopped today" means their today.
+  const today = dayKey(new Date(), await viewerTimeZone());
+  const result = await runWrite((client, userId) =>
+    transactions.stopRecurring(client, userId, id, today)
+  );
+  return result.ok ? {} : { error: result.error };
+}
+
+export async function resumeRecurring(id: string): Promise<{ error?: string }> {
+  const result = await runWrite((client, userId) =>
+    transactions.resumeRecurring(client, userId, id)
+  );
+  return result.ok ? {} : { error: result.error };
 }

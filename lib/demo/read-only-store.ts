@@ -56,6 +56,8 @@ export function createReadOnlyDemoStore(
       add: refused,
       update: refused,
       remove: refused,
+      setEndsOn: refused,
+      retag: refused,
     },
   };
 }

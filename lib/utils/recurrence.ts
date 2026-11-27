@@ -84,9 +84,11 @@ interface RecurringLike {
   recurrence?: string | null;
   category?: { id: string } | null;
   category_id?: string | null;
+  /** From this day the commitment no longer counts. */
+  ends_on?: string | null;
 }
 
-function categoryKey(t: RecurringLike): string {
+function categoryKey(t: Pick<RecurringLike, "category" | "category_id">): string {
   return t.category?.id ?? t.category_id ?? "";
 }
 
@@ -101,17 +103,16 @@ function categoryKey(t: RecurringLike): string {
  *
  * The most recent row in each series wins, which is what makes that work.
  */
-export function recurringSeries<T extends RecurringLike>(transactions: T[]): T[] {
+export function recurringSeries<T extends RecurringLike>(
+  transactions: T[],
+  asOf?: string
+): T[] {
   const latest = new Map<string, T>();
 
   for (const t of transactions) {
     if (recurrenceOption(t.recurrence).perMonth === 0) continue;
 
-    const key = [
-      t.recurrence,
-      categoryKey(t),
-      (t.merchant ?? "").trim().toLowerCase(),
-    ].join("|");
+    const key = seriesKey(t);
 
     const current = latest.get(key);
     // Ties on date keep the first seen, which is the newest because the
@@ -121,12 +122,30 @@ export function recurringSeries<T extends RecurringLike>(transactions: T[]): T[]
     }
   }
 
-  return Array.from(latest.values());
+  // Ended is decided on the newest row, after the winner is picked: filtering
+  // first would let an older row of a stopped series count again.
+  return Array.from(latest.values()).filter(
+    (t) => !asOf || !t.ends_on || t.ends_on > asOf
+  );
+}
+
+/** What makes two rows the same commitment. Deliberately not the amount. */
+export function seriesKey(
+  t: Pick<RecurringLike, "recurrence" | "merchant" | "category" | "category_id">
+): string {
+  return [
+    t.recurrence ?? "once",
+    categoryKey(t),
+    (t.merchant ?? "").trim().toLowerCase(),
+  ].join("|");
 }
 
 /** Total monthly cost of every standing commitment. */
-export function recurringMonthlyTotal(transactions: RecurringLike[]): number {
-  return recurringSeries(transactions).reduce(
+export function recurringMonthlyTotal(
+  transactions: RecurringLike[],
+  asOf?: string
+): number {
+  return recurringSeries(transactions, asOf).reduce(
     (sum, t) => sum + monthlyEquivalent(t.amount, t.recurrence),
     0
   );

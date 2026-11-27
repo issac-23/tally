@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { resolveSession } from "@/lib/session";
+import { resolveSession, viewerTimeZone } from "@/lib/session";
+import { today as todayIn } from "@/lib/utils/calendar";
+import { recurrenceOption } from "@/lib/utils/recurrence";
+import { RepeatControl } from "@/components/forms/repeat-control";
 import { orThrow } from "@/lib/store/types";
 import { ExpenseForm } from "@/components/forms/expense-form";
 
@@ -31,6 +34,12 @@ export default async function EditTransactionPage({
     notFound();
   }
 
+  const today = todayIn(new Date(), await viewerTimeZone());
+  const repeats = recurrenceOption(transaction.recurrence).perMonth > 0;
+  // An end date still in the future hasn't stopped it yet.
+  const endedOn =
+    transaction.ends_on && transaction.ends_on <= today ? transaction.ends_on : null;
+
   return (
     <main className="px-6 py-10">
       <div className="max-w-md mx-auto space-y-8">
@@ -56,6 +65,7 @@ export default async function EditTransactionPage({
             categories={categories}
             transaction={transaction}
           />
+          {repeats && <RepeatControl id={transaction.id} endedOn={endedOn} />}
         </div>
       </div>
     </main>

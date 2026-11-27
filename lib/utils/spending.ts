@@ -69,7 +69,7 @@ export function monthlyBurnRate(
     .filter((t) => isOnOrAfter(t.date, cutoff))
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  return oneOff + recurringMonthlyTotal(recurringTransactions);
+  return oneOff + recurringMonthlyTotal(recurringTransactions, daysAgo(now, 0, timeZone));
 }
 
 /**
