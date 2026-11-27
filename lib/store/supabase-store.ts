@@ -56,6 +56,12 @@ const TRANSACTION_COLUMNS = `id, amount, description, merchant, date, recurrence
 const CATEGORY_COLUMNS = "id, user_id, name, icon, color, is_preset";
 const INCOME_COLUMNS = "id, name, amount, recurrence, starts_on, ends_on";
 
+// Supabase's usual `max_rows` is 1000. Pages stop on a short page, so a
+// project that caps lower than this would need PAGE_SIZE lowered to match.
+const PAGE_SIZE = 1000;
+// The row cap is 10,000 per user; the extra page is slack, not a feature.
+const MAX_PAGES = 11;
+
 export function createSupabaseStore(client: SupabaseClient): Store {
   /** Run a query that returns a list of rows and narrow each. */
   async function rows<T>(
@@ -65,6 +71,31 @@ export function createSupabaseStore(client: SupabaseClient): Store {
     const { data, error } = await query;
     if (error) return failure(error);
     return stored(Array.isArray(data) ? (data as Row[]).map(narrow) : []);
+  }
+
+  /**
+   * Run a list query a page at a time until a short page comes back.
+   *
+   * PostgREST truncates a response at the project's `max_rows` with no
+   * warning, and the per-user cap is 10,000 rows. `build` makes a fresh query
+   * per page (a builder is spent once `range` is applied) and must order by
+   * something unique so pages neither skip nor repeat a row.
+   */
+  async function pagedRows<T>(
+    build: () => {
+      range(from: number, to: number): PromiseLike<{ data: unknown; error: DbError | null }>;
+    },
+    narrow: (row: Row) => T
+  ): Promise<StoreResult<T[]>> {
+    const all: T[] = [];
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE_SIZE;
+      const result = await rows(build().range(from, from + PAGE_SIZE - 1), narrow);
+      if (!result.ok) return result;
+      all.push(...result.value);
+      if (result.value.length < PAGE_SIZE) break;
+    }
+    return stored(all);
   }
 
   /** Run a write and report only whether it worked. */
@@ -189,29 +220,40 @@ export function createSupabaseStore(client: SupabaseClient): Store {
 
     transactions: {
       listAll() {
-        return rows(
-          client
-            .from("transactions")
-            .select(TRANSACTION_COLUMNS)
-            .order("date", { ascending: false })
-            .order("created_at", { ascending: false }),
+        return pagedRows(
+          () =>
+            client
+              .from("transactions")
+              .select(TRANSACTION_COLUMNS)
+              .order("date", { ascending: false })
+              .order("created_at", { ascending: false })
+              .order("id", { ascending: false }),
           toTransaction
         );
       },
       listSince(day) {
-        return rows(
-          client.from("transactions").select(TRANSACTION_COLUMNS).gte("date", day),
+        return pagedRows(
+          () =>
+            client
+              .from("transactions")
+              .select(TRANSACTION_COLUMNS)
+              .gte("date", day)
+              .order("date", { ascending: false })
+              .order("created_at", { ascending: false })
+              .order("id", { ascending: false }),
           toTransaction
         );
       },
       listRecurring() {
-        return rows(
-          client
-            .from("transactions")
-            .select(TRANSACTION_COLUMNS)
-            .neq("recurrence", "once")
-            .order("date", { ascending: false })
-            .order("created_at", { ascending: false }),
+        return pagedRows(
+          () =>
+            client
+              .from("transactions")
+              .select(TRANSACTION_COLUMNS)
+              .neq("recurrence", "once")
+              .order("date", { ascending: false })
+              .order("created_at", { ascending: false })
+              .order("id", { ascending: false }),
           toTransaction
         );
       },
